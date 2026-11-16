@@ -91,3 +91,30 @@
 - **Clouds** were only in world y&lt;150; spawn camera looks at y≈600+, so clouds never entered the view. `layoutCloudsForView()` places them in the top of the current viewport (sky band still used when the camera shows it).
 - **Ground** looked like 3 stripes because tiles were 56px apart; `HORIZON_TILE_STEP_Y` is **12** (strip height) until we revisit PLAN §5 spacing.
 - **Exit preview** uses `z-20`, `img.decode()`, and the game canvas is `z-0` so the restart crop sits above the desert.
+
+## Milestone 4 — Portals (completed)
+
+### Built
+- `src/game/collision.js` — footprint AABBs, overlap test, smallest-axis separation for dino vs solids.
+- `src/game/constants.js` — gate geometry (`GATE_GAP`, post/flank footprint sizes, trigger size), `PORTAL_DEFS` with opening centers and `PORTAL_RETURN_OFFSET_Y` (72px).
+- `src/game/entities.js` — `createPortals()`, solid colliders, trigger overlap, `drawSortedActors()` y-sort (dino + posts + flanks by foot y), `portalLabelAnchor()`, movement resolves X/Y against portal solids before world clamp.
+- `src/game/Game.js` — `onProximity` / `onEnter` callbacks (enter only when `loopMode === 'world'`, jump edge, `z === 0`, footprint in trigger); DOM label `translate3d` each frame from camera; label font 16px vs 24px from `S / dpr`.
+- `src/components/World.jsx` — Press Start 2P labels in a layer above canvas (`z-10`), blinking proximity cue (opacity, `CUE_BLINK_MS`), `aria-live` cue text, dev `console.info` on enter.
+- `src/index.css` — `.portal-label-layer` / `.portal-label`.
+
+### Deviations
+- **Enter feedback:** No section UI yet; `onEnter` updates status text and logs in dev until milestone 5 wires hash + dialog.
+- **Cue blink:** Opacity blink on the bottom cue keeps `aria-live` text stable while inside the trigger (plan: do not repeat announcement while stationary in the box).
+- **Coarse pointer copy:** Cue says “Tap jump” when `(pointer: coarse)` even before milestone 6 touch controls exist.
+
+### Constants worth tuning
+- `src/game/constants.js` — `PORTAL_DEFS` centers, `GATE_GAP` (48), `GATE_FLANK_OUTSET` (16), `POST_FOOTPRINT_*`, `FLANK_FOOTPRINT_*`, `PORTAL_TRIGGER_W/H`, `PORTAL_RETURN_OFFSET_Y`.
+- `src/game/entities.js` — label anchor offset **12px** above large cactus tops (`portalLabelAnchor`).
+- `src/game/Game.js` — label font threshold at `cssPxPerGame >= 3` → 24px else 16px.
+
+### For milestone 5+
+- `Game.onEnter` is ready; set `inputLocked`, `loopMode: 'transition'`, apex wipe, then `pushState` + `syncFromLocation()` from `App.jsx`.
+- Each gate exposes `returnPoint` on the portal object (`createPortals()`); use when exiting a section.
+- Ignore `onEnter` when React `mode !== 'world'` (per plan) — enforce in App/wrapper, not only in `Game._handlePortalTriggers`.
+- `portalLabels` refs are passed into `Game`; same hook can drive HUD later.
+- Collision list is static per session; no dynamic obstacles.

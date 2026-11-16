@@ -29,6 +29,14 @@ body {
   image-rendering: pixelated;
 }
 
+.portal-label-layer {
+  overflow: hidden;
+}
+
+.portal-label {
+  will-change: transform;
+}
+
 .font-display {
   font-family: var(--font-display);
   -webkit-font-smoothing: none;

@@ -10,6 +10,25 @@ export const DESERT_COLOR = '#f7f7f7'
 
 export const SPAWN = { x: 800, y: 760, facingRight: true }
 
+/** Gate geometry (PLAN §4). */
+export const GATE_GAP = 48
+export const GATE_FLANK_OUTSET = 16
+export const POST_FOOTPRINT_W = 25
+export const POST_FOOTPRINT_H = 8
+export const FLANK_FOOTPRINT_W = 17
+export const FLANK_FOOTPRINT_H = 6
+export const PORTAL_TRIGGER_W = 40
+export const PORTAL_TRIGGER_H = 28
+export const PORTAL_RETURN_OFFSET_Y = 72
+export const CUE_BLINK_MS = 1000 / 3
+
+/** Opening centers; return point is same x, y + PORTAL_RETURN_OFFSET_Y. */
+export const PORTAL_DEFS = [
+  { id: 'about', x: 340, y: 460, label: 'ABOUT' },
+  { id: 'experience', x: 800, y: 300, label: 'EXPERIENCE' },
+  { id: 'projects', x: 1260, y: 460, label: 'PROJECTS' },
+]
+
 export const HEADROOM = 147
 /** PLAN cites 56px; use strip height (12) so ground reads continuous in the camera window. */
 export const HORIZON_TILE_STEP_Y = 12

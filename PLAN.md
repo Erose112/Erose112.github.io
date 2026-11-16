@@ -13,7 +13,7 @@ todos:
     status: completed
   - id: portals
     content: Add three cactus gates with base-footprint colliders, canvas y-sorting, DOM labels above the canvas, and jump-to-enter
-    status: pending
+    status: completed
   - id: sections
     content: Wire syncFromLocation, the apex wipe, a native dialog whose close event exits once, and a single-frame restart crop
     status: pending

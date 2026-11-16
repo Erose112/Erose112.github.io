@@ -1,4 +1,5 @@
 import { ATLAS, TREX_FRAME_OFFSET } from './atlas.js'
+import { footprintBox, boxesOverlap, resolveFootprintCollisions } from './collision.js'
 import {
   BLINK_DELAY_MAX_MS,
   BLINK_DELAY_MIN_MS,
@@ -6,8 +7,12 @@ import {
   CLOUD_COUNT,
   CLOUD_DRIFT_PX_PER_SEC,
   DESERT_COLOR,
+  FLANK_FOOTPRINT_H,
+  FLANK_FOOTPRINT_W,
   FOOTPRINT_H,
   FOOTPRINT_W,
+  GATE_FLANK_OUTSET,
+  GATE_GAP,
   GROUND_BOTTOM,
   GROUND_TOP,
   HORIZON_TILE_STEP_Y,
@@ -19,6 +24,12 @@ import {
   JUMP_PEAK_REF,
   JUMP_Z_CLAMP,
   MOVE_SPEED,
+  PORTAL_DEFS,
+  PORTAL_RETURN_OFFSET_Y,
+  PORTAL_TRIGGER_H,
+  PORTAL_TRIGGER_W,
+  POST_FOOTPRINT_H,
+  POST_FOOTPRINT_W,
   RUN_FRAME_MS,
   SHADOW_H,
   SHADOW_W,
@@ -64,13 +75,132 @@ function clampFootprint(footX, footY) {
 }
 
 /**
+ * @typedef {'about' | 'experience' | 'projects'} PortalId
+ * @typedef {{
+ *   id: PortalId,
+ *   centerX: number,
+ *   footY: number,
+ *   label: string,
+ *   leftPost: { footX: number, footY: number },
+ *   rightPost: { footX: number, footY: number },
+ *   leftFlank: { footX: number, footY: number },
+ *   rightFlank: { footX: number, footY: number },
+ *   trigger: { centerX: number, centerY: number, w: number, h: number },
+ *   returnPoint: { x: number, y: number },
+ * }} PortalGate
+ */
+
+/** @returns {PortalGate[]} */
+export function createPortals() {
+  const largeW = ATLAS.cactusLarge.w
+  const smallW = ATLAS.cactusSmall.w
+  const halfGap = GATE_GAP / 2
+
+  return PORTAL_DEFS.map((def) => {
+    const footY = def.y
+    const centerX = def.x
+    const leftPostFootX = centerX - halfGap - largeW / 2
+    const rightPostFootX = centerX + halfGap + largeW / 2
+    const leftFlankFootX = leftPostFootX - largeW / 2 - GATE_FLANK_OUTSET - smallW / 2
+    const rightFlankFootX = rightPostFootX + largeW / 2 + GATE_FLANK_OUTSET + smallW / 2
+    const triggerCenterY = footY - PORTAL_TRIGGER_H / 2
+
+    return {
+      id: def.id,
+      centerX,
+      footY,
+      label: def.label,
+      leftPost: { footX: leftPostFootX, footY },
+      rightPost: { footX: rightPostFootX, footY },
+      leftFlank: { footX: leftFlankFootX, footY },
+      rightFlank: { footX: rightFlankFootX, footY },
+      trigger: {
+        centerX,
+        centerY: triggerCenterY,
+        w: PORTAL_TRIGGER_W,
+        h: PORTAL_TRIGGER_H,
+      },
+      returnPoint: { x: centerX, y: footY + PORTAL_RETURN_OFFSET_Y },
+    }
+  })
+}
+
+/** @param {PortalGate[]} portals */
+export function portalSolidColliders(portals) {
+  /** @type {{ footX: number, footY: number, footprint: { w: number, h: number } }[]} */
+  const solids = []
+  for (const gate of portals) {
+    solids.push(
+      {
+        footX: gate.leftPost.footX,
+        footY: gate.leftPost.footY,
+        footprint: { w: POST_FOOTPRINT_W, h: POST_FOOTPRINT_H },
+      },
+      {
+        footX: gate.rightPost.footX,
+        footY: gate.rightPost.footY,
+        footprint: { w: POST_FOOTPRINT_W, h: POST_FOOTPRINT_H },
+      },
+      {
+        footX: gate.leftFlank.footX,
+        footY: gate.leftFlank.footY,
+        footprint: { w: FLANK_FOOTPRINT_W, h: FLANK_FOOTPRINT_H },
+      },
+      {
+        footX: gate.rightFlank.footX,
+        footY: gate.rightFlank.footY,
+        footprint: { w: FLANK_FOOTPRINT_W, h: FLANK_FOOTPRINT_H },
+      },
+    )
+  }
+  return solids
+}
+
+/** @param {PortalGate} gate */
+export function portalTriggerBox(gate) {
+  const { centerX, centerY, w, h } = gate.trigger
+  return {
+    left: centerX - w / 2,
+    right: centerX + w / 2,
+    top: centerY - h / 2,
+    bottom: centerY + h / 2,
+  }
+}
+
+/**
+ * @param {ReturnType<typeof createDino>} dino
+ * @param {PortalGate[]} portals
+ * @returns {PortalId | null}
+ */
+export function portalOverlappingTrigger(dino, portals) {
+  const dinoBox = footprintBox(dino.footX, dino.footY, FOOTPRINT_W, FOOTPRINT_H)
+  for (const gate of portals) {
+    if (boxesOverlap(dinoBox, portalTriggerBox(gate))) {
+      return gate.id
+    }
+  }
+  return null
+}
+
+/**
  * @param {ReturnType<typeof createDino>} dino
  * @param {{ x: number, y: number }} axis
  * @param {number} dt
  * @param {boolean} jumpEdge
  * @param {boolean} jumpHeld
+ * @param {{ footX: number, footY: number, footprint: { w: number, h: number } }[]} [solids]
+ * @param {PortalGate[]} [portals]
+ * @returns {PortalId | null} portal entered via jump edge while overlapping trigger
  */
-export function updateDinoMoveAndJump(dino, axis, dt, jumpEdge, jumpHeld) {
+export function updateDinoMoveAndJump(
+  dino,
+  axis,
+  dt,
+  jumpEdge,
+  jumpHeld,
+  solids = [],
+  portals = [],
+) {
   const frames = dt * 60
 
   let vx = axis.x * MOVE_SPEED * dt
@@ -81,14 +211,40 @@ export function updateDinoMoveAndJump(dino, axis, dt, jumpEdge, jumpHeld) {
   }
 
   dino.footX += vx
+  if (solids.length > 0) {
+    const resolvedX = resolveFootprintCollisions(
+      dino.footX,
+      dino.footY,
+      FOOTPRINT_W,
+      FOOTPRINT_H,
+      solids,
+    )
+    dino.footX = resolvedX.x
+    dino.footY = resolvedX.y
+  }
   dino.footY += vy
+  if (solids.length > 0) {
+    const resolvedY = resolveFootprintCollisions(
+      dino.footX,
+      dino.footY,
+      FOOTPRINT_W,
+      FOOTPRINT_H,
+      solids,
+    )
+    dino.footX = resolvedY.x
+    dino.footY = resolvedY.y
+  }
   const clamped = clampFootprint(dino.footX, dino.footY)
   dino.footX = clamped.x
   dino.footY = clamped.y
 
   dino.moveSpeed = Math.hypot(vx, vy) / dt
 
+  let enteredPortal = null
   if (jumpEdge && dino.z === 0) {
+    if (portals.length > 0) {
+      enteredPortal = portalOverlappingTrigger(dino, portals)
+    }
     const hPxPerFrame = Math.abs(axis.x) * (MOVE_SPEED / 60)
     dino.vz = JUMP_INITIAL_VELOCITY + hPxPerFrame / 10
     dino.airborne = true
@@ -114,6 +270,8 @@ export function updateDinoMoveAndJump(dino, axis, dt, jumpEdge, jumpHeld) {
       dino.reachedMinJump = false
     }
   }
+
+  return enteredPortal
 }
 
 /**
@@ -318,6 +476,90 @@ export function drawDino(ctx, img, dino) {
 /**
  * Fill margins when the view is larger than the world on an axis.
  */
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasImageSource} img
+ * @param {number} footX
+ * @param {number} footY
+ * @param {'large' | 'small'} kind
+ */
+function drawCactus(ctx, img, footX, footY, kind) {
+  const atlas = kind === 'large' ? ATLAS.cactusLarge : ATLAS.cactusSmall
+  const { x: sx, y: sy, w, h } = atlas
+  const drawX = Math.round(footX - w / 2)
+  const drawY = Math.round(footY - h)
+  ctx.drawImage(img, sx, sy, w, h, drawX, drawY, w, h)
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasImageSource} img
+ * @param {PortalGate} gate
+ * @param {'leftPost' | 'rightPost' | 'leftFlank' | 'rightFlank'} part
+ */
+export function drawPortalPart(ctx, img, gate, part) {
+  const foot =
+    part === 'leftPost'
+      ? gate.leftPost
+      : part === 'rightPost'
+        ? gate.rightPost
+        : part === 'leftFlank'
+          ? gate.leftFlank
+          : gate.rightFlank
+  const kind = part === 'leftFlank' || part === 'rightFlank' ? 'small' : 'large'
+  drawCactus(ctx, img, foot.footX, foot.footY, kind)
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasImageSource} img
+ * @param {ReturnType<typeof createDino>} dino
+ * @param {PortalGate[]} portals
+ */
+export function drawSortedActors(ctx, img, dino, portals) {
+  /** @type {{ footY: number, draw: () => void }[]} */
+  const items = []
+
+  items.push({
+    footY: dino.footY,
+    draw: () => {
+      drawDinoShadow(ctx, dino)
+      drawDino(ctx, img, dino)
+    },
+  })
+
+  const parts = ['leftPost', 'rightPost', 'leftFlank', 'rightFlank']
+  for (const gate of portals) {
+    for (const part of parts) {
+      const foot =
+        part === 'leftPost'
+          ? gate.leftPost
+          : part === 'rightPost'
+            ? gate.rightPost
+            : part === 'leftFlank'
+              ? gate.leftFlank
+              : gate.rightFlank
+      items.push({
+        footY: foot.footY,
+        draw: () => drawPortalPart(ctx, img, gate, part),
+      })
+    }
+  }
+
+  items.sort((a, b) => a.footY - b.footY)
+  for (const item of items) {
+    item.draw()
+  }
+}
+
+/** Label anchor in game space: centered above the gate posts. */
+export function portalLabelAnchor(gate) {
+  return {
+    x: gate.centerX,
+    y: gate.footY - ATLAS.cactusLarge.h - 12,
+  }
+}
+
 export function drawWorldMargins(ctx, camX, camY, viewW, viewH) {
   ctx.fillStyle = DESERT_COLOR
   if (viewW > WORLD_WIDTH) {
