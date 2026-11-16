@@ -1,7 +1,8 @@
+import { assetUrl } from '../assetUrl.js'
 import { ATLAS } from '../game/atlas.js'
 import { restartSpriteMultiple } from '../game/scale.js'
 
-const SHEET_URL = '/sprites/100-offline-sprite.png'
+const SHEET_URL = assetUrl('sprites/100-offline-sprite.png')
 const SHEET_W = 1233
 const SHEET_H = 100
 

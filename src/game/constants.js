@@ -1,3 +1,5 @@
+import { assetUrl } from '../assetUrl.js'
+
 export const WORLD_WIDTH = 1600
 export const WORLD_HEIGHT = 960
 export const SKY_BOTTOM = 150
@@ -62,7 +64,7 @@ export const INK_COLOR = '#535353'
 export const SHADOW_W = 30
 export const SHADOW_H = 8
 
-export const SPRITE_SHEET_URL = '/sprites/100-offline-sprite.png'
+export const SPRITE_SHEET_URL = assetUrl('sprites/100-offline-sprite.png')
 
 export function cameraAnchor(visibleHeight) {
   return Math.max(0.5, Math.min(0.85, HEADROOM / visibleHeight))

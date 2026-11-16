@@ -1,4 +1,5 @@
 // Verbatim copy from the original App.jsx — do not copy-edit.
+import { assetUrl } from './assetUrl.js'
 
 export const chromiumAttribution = {
   plainFooter:
@@ -9,10 +10,10 @@ export const chromiumAttribution = {
 }
 
 export const companyLogos = [
-  { src: '/memotext-logo.png', alt: 'MEMOTEXT' },
-  { src: '/queens-logo.png', alt: "Queen's University" },
-  { src: '/slr-logo.jpg', alt: 'SLR Consulting' },
-  { src: '/u-flourish.png', alt: 'UFlourish' },
+  { src: assetUrl('memotext-logo.png'), alt: 'MEMOTEXT' },
+  { src: assetUrl('queens-logo.png'), alt: "Queen's University" },
+  { src: assetUrl('slr-logo.jpg'), alt: 'SLR Consulting' },
+  { src: assetUrl('u-flourish.png'), alt: 'UFlourish' },
 ]
 
 export const site = {
@@ -32,7 +33,7 @@ export const site = {
   },
   resume: {
     label: 'Resume',
-    href: '/Ethan_R_Software_Developer_Resume.pdf',
+    href: assetUrl('Ethan_R_Software_Developer_Resume.pdf'),
   },
   contactMe: {
     label: 'Contact Me',
@@ -75,7 +76,7 @@ export const projectsSection = {
     {
       title: 'Qflow Co-founder',
       href: 'https://qflow.pooria.dev/',
-      imageSrc: '/qflow-screenshot.png',
+      imageSrc: assetUrl('qflow-screenshot.png'),
       imageAlt: 'Qflow degree planning dashboard',
       imageObjectPosition: 'left top',
       description: `I'm the co-founder of Qflow a course scheduling and degree planning tool for Queen's University student. I'm in charge of implementing and maintaining the degree planning tool, and managing the general members.`,
@@ -83,7 +84,7 @@ export const projectsSection = {
     {
       title: 'HAVOC',
       href: null,
-      imageSrc: '/qret_image.webp',
+      imageSrc: assetUrl('qret_image.webp'),
       imageAlt: "Queen's Rocket Engineering Team",
       imageObjectPosition: 'center',
       description: `I'm working on a fault injection tool for the Queen's Rocket Engineering Team launch control stack.`,
@@ -91,7 +92,7 @@ export const projectsSection = {
     {
       title: 'SEO-Audit',
       href: 'https://github.com/Erose112/seo-audit',
-      imageSrc: '/seo-audit-screenshot.png',
+      imageSrc: assetUrl('seo-audit-screenshot.png'),
       imageAlt: 'SEO-Audit CLI screenshot',
       imageObjectPosition: 'left',
       description: `I built a Go CLI that crawls sites with robots.txt, rate limiting, and retry logic. It scores pages from 0 to 100 on 7 different SEO based checks.`,
