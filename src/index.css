@@ -65,6 +65,41 @@ dialog.section-dialog::backdrop {
   background-color: var(--color-night);
 }
 
+.section-dialog-body {
+  height: 100%;
+  max-height: 100dvh;
+}
+
+.world-canvas {
+  filter: invert(0);
+  transition: filter 400ms ease;
+}
+
+.world-shell--wipe-enter .world-canvas {
+  filter: invert(1);
+}
+
+.world-shell--wipe-exit .world-canvas {
+  animation: desert-wipe-out 400ms ease forwards;
+}
+
+@keyframes desert-wipe-out {
+  from {
+    filter: invert(1);
+  }
+  to {
+    filter: invert(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-canvas {
+    transition: none;
+    filter: none;
+    animation: none;
+  }
+}
+
 @keyframes logo-marquee {
   from {
     transform: translateX(0);

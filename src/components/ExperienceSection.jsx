@@ -1,6 +1,5 @@
 import { experienceSection } from '../content.js'
 import ExpandableDescription from './ExpandableDescription.jsx'
-import LogoMarquee from './LogoMarquee.jsx'
 
 export default function ExperienceSection() {
   return (
@@ -11,8 +10,6 @@ export default function ExperienceSection() {
       >
         {experienceSection.title}
       </h2>
-
-      <LogoMarquee />
 
       <div className="mt-6 max-w-5xl space-y-8">
         {experienceSection.roles.map((role) => (

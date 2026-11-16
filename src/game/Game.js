@@ -47,6 +47,7 @@ function clampCamera(camX, camY, viewW, viewH) {
  * @typedef {{
  *   onProximity?: (id: import('./entities.js').PortalGate['id'] | null) => void,
  *   onEnter?: (id: import('./entities.js').PortalGate['id']) => void,
+ *   onApex?: () => void,
  *   portalLabels?: Record<string, HTMLElement | null>,
  * }} GameOptions
  */
@@ -57,6 +58,7 @@ export class Game {
     this.canvas = canvas
     this.onProximity = options.onProximity ?? (() => {})
     this.onEnter = options.onEnter ?? (() => {})
+    this.onApex = options.onApex ?? (() => {})
     this.portalLabels = options.portalLabels ?? {}
     this.disposed = false
     this.rafId = 0
@@ -83,6 +85,9 @@ export class Game {
     this.inputLocked = false
     this.input = null
     this.activePortal = null
+    this._awaitingApex = false
+    this._prevVz = 0
+    this._frozenAtApex = false
 
     this._onFrame = this._onFrame.bind(this)
     this._onVisibility = this._onVisibility.bind(this)
@@ -97,6 +102,39 @@ export class Game {
   setInputLocked(locked) {
     this.inputLocked = locked
     this.input?.setInputLocked(locked)
+  }
+
+  /** @param {import('./entities.js').PortalId} portalId */
+  placeDinoAtReturn(portalId) {
+    const gate = this.portals.find((p) => p.id === portalId)
+    if (!gate) {
+      return
+    }
+    const { x, y } = gate.returnPoint
+    this.dino.footX = x
+    this.dino.footY = y
+    this.dino.z = 0
+    this.dino.vz = 0
+    this.dino.airborne = false
+    this.dino.reachedMinJump = false
+    this.dino.moveSpeed = 0
+    this.updateCamera()
+  }
+
+  beginEnterTransition() {
+    this._awaitingApex = true
+    this._prevVz = this.dino.vz
+    this._frozenAtApex = false
+  }
+
+  freezeAtApex() {
+    this._frozenAtApex = true
+    this._awaitingApex = false
+  }
+
+  clearTransitionFreeze() {
+    this._frozenAtApex = false
+    this._awaitingApex = false
   }
 
   _isLoopActive() {
@@ -234,6 +272,17 @@ export class Game {
 
   tick(dt) {
     const now = performance.now()
+
+    if (this._frozenAtApex) {
+      this.dino.moveSpeed = 0
+      updateDinoAnimation(this.dino, now, 0)
+      this.updateCamera()
+      if (!this.reduceMotion) {
+        updateClouds(this.clouds, dt, this.camX, this.viewW)
+      }
+      return
+    }
+
     const axis = this.input?.getAxis() ?? { x: 0, y: 0 }
     const jumpEdge = this.input?.consumeJumpEdge() ?? false
     const jumpHeld = this.input?.isJumpHeld() ?? false
@@ -250,6 +299,19 @@ export class Game {
     if (this.loopMode === 'world' && enteredPortal) {
       this.onEnter(enteredPortal)
     }
+
+    if (
+      this._awaitingApex &&
+      this.loopMode === 'transition' &&
+      this.dino.airborne &&
+      this._prevVz > 0 &&
+      this.dino.vz <= 0
+    ) {
+      this._awaitingApex = false
+      this.onApex()
+    }
+    this._prevVz = this.dino.vz
+
     updateDinoAnimation(this.dino, now, dt)
     this.updateCamera()
     this._updatePortalProximity()

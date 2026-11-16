@@ -1,4 +1,3 @@
-import { createPortal } from 'react-dom'
 import { ATLAS } from '../game/atlas.js'
 import { restartSpriteMultiple } from '../game/scale.js'
 
@@ -7,11 +6,12 @@ const SHEET_W = 1233
 const SHEET_H = 100
 
 /**
- * Milestone 2: crisp restart crop (36N × 32N device px). Portaled to body so
- * #root { overflow: hidden } does not clip `position: fixed`.
+ * Restart crop (36N × 32N device px). Frame 0 only; spin offsets stay unused.
+ *
+ * @param {{ onPress?: () => void }} props
  */
-export default function ExitButton() {
-  const dpr = window.devicePixelRatio || 1
+export default function ExitButton({ onPress }) {
+  const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
   const N = restartSpriteMultiple(dpr)
   const deviceW = ATLAS.restart.w * N
   const deviceH = ATLAS.restart.h * N
@@ -19,29 +19,27 @@ export default function ExitButton() {
   const cssH = deviceH / dpr
   const scale = cssW / ATLAS.restart.w
 
-  return createPortal(
-    <div
-      className="exit-preview pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top,0px))] z-[200] -translate-x-1/2"
-      aria-hidden
+  return (
+    <button
+      type="button"
+      className="section-exit-btn fixed left-1/2 top-[max(1rem,env(safe-area-inset-top,0px))] z-10 -translate-x-1/2 overflow-hidden border-2 border-night-ink bg-desert p-0 pixelated"
+      style={{ width: cssW, height: cssH }}
+      aria-keyshortcuts="Escape"
+      onClick={() => onPress?.()}
     >
-      <div
-        className="pixelated overflow-hidden border-2 border-ink bg-desert"
-        style={{ width: cssW, height: cssH }}
-      >
-        <img
-          src={SHEET_URL}
-          alt=""
-          draggable={false}
-          className="block max-w-none"
-          width={Math.round(SHEET_W * scale)}
-          height={Math.round(SHEET_H * scale)}
-          style={{
-            marginLeft: -ATLAS.restart.x * scale,
-            marginTop: -ATLAS.restart.y * scale,
-          }}
-        />
-      </div>
-    </div>,
-    document.body,
+      <span className="sr-only">Back to desert</span>
+      <img
+        src={SHEET_URL}
+        alt=""
+        draggable={false}
+        className="block max-w-none"
+        width={Math.round(SHEET_W * scale)}
+        height={Math.round(SHEET_H * scale)}
+        style={{
+          marginLeft: -ATLAS.restart.x * scale,
+          marginTop: -ATLAS.restart.y * scale,
+        }}
+      />
+    </button>
   )
 }

@@ -21,6 +21,7 @@ export const PORTAL_TRIGGER_W = 40
 export const PORTAL_TRIGGER_H = 28
 export const PORTAL_RETURN_OFFSET_Y = 72
 export const CUE_BLINK_MS = 1000 / 3
+export const WIPE_MS = 400
 
 /** Opening centers; return point is same x, y + PORTAL_RETURN_OFFSET_Y. */
 export const PORTAL_DEFS = [

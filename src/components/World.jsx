@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { CUE_BLINK_MS } from '../game/constants.js'
 import { Game } from '../game/Game.js'
-import ExitButton from './ExitButton.jsx'
 
 const PORTAL_LABELS = [
   { id: 'about', text: 'ABOUT' },
@@ -15,14 +14,22 @@ const PORTAL_ARIA_NAMES = {
   projects: 'Projects',
 }
 
-export default function World() {
+/**
+ * @param {{
+ *   mode: 'world' | 'transition' | 'section' | 'plain',
+ *   wipe: 'none' | 'enter' | 'exit',
+ *   onGameReady: (game: import('../game/Game.js').Game) => void,
+ *   onPortalEnter: (id: 'about' | 'experience' | 'projects', game: import('../game/Game.js').Game) => void,
+ * }} props
+ */
+export default function World({ mode, wipe, onGameReady, onPortalEnter }) {
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const observerRef = useRef(null)
   const labelRefs = useRef({})
+  const modeRef = useRef(mode)
   const [proximityId, setProximityId] = useState(null)
   const [cueVisible, setCueVisible] = useState(true)
-  const [enterFlash, setEnterFlash] = useState(null)
   const [reduceMotion] = useState(
     () =>
       typeof window !== 'undefined' &&
@@ -34,15 +41,24 @@ export default function World() {
       window.matchMedia('(pointer: coarse)').matches,
   )
 
+  const onGameReadyRef = useRef(onGameReady)
+  const onPortalEnterRef = useRef(onPortalEnter)
+
   useEffect(() => {
-    if (!proximityId || reduceMotion) {
+    modeRef.current = mode
+    onGameReadyRef.current = onGameReady
+    onPortalEnterRef.current = onPortalEnter
+  }, [mode, onGameReady, onPortalEnter])
+
+  useEffect(() => {
+    if (!proximityId || reduceMotion || mode !== 'world') {
       return undefined
     }
     const id = window.setInterval(() => {
       setCueVisible((v) => !v)
     }, CUE_BLINK_MS)
     return () => window.clearInterval(id)
-  }, [proximityId, reduceMotion])
+  }, [proximityId, reduceMotion, mode])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -57,14 +73,17 @@ export default function World() {
         setCueVisible(true)
       },
       onEnter: (id) => {
-        setEnterFlash(id)
-        console.info(`[portal] enter: ${id}`)
+        if (modeRef.current !== 'world') {
+          return
+        }
+        onPortalEnterRef.current(id, game)
       },
     })
     gameRef.current = game
     if (import.meta.env.DEV) {
       canvas.__portfolioGame = game
     }
+    onGameReadyRef.current(game)
 
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0]
@@ -104,6 +123,20 @@ export default function World() {
     }
   }, [])
 
+  useEffect(() => {
+    const game = gameRef.current
+    if (!game) {
+      return
+    }
+    if (mode === 'world' || mode === 'transition') {
+      game.setLoopMode(mode)
+    } else if (mode === 'section') {
+      game.setLoopMode('section')
+    } else if (mode === 'plain') {
+      game.setLoopMode('plain')
+    }
+  }, [mode])
+
   const cueText = (() => {
     if (!proximityId) {
       return ''
@@ -113,16 +146,19 @@ export default function World() {
     return `${name} portal. ${action} to enter.`
   })()
 
-  const showCue = proximityId && !enterFlash && (reduceMotion || cueVisible)
+  const showCue =
+    mode === 'world' && proximityId && (reduceMotion || cueVisible)
 
-  const statusText = enterFlash
-    ? `Entered ${PORTAL_ARIA_NAMES[enterFlash] ?? enterFlash} (milestone 5 opens section).`
-    : proximityId
-      ? cueText
-      : '\u00a0'
+  const shellClass = [
+    'world-shell fixed inset-0',
+    wipe === 'enter' && !reduceMotion ? 'world-shell--wipe-enter' : '',
+    wipe === 'exit' && !reduceMotion ? 'world-shell--wipe-exit' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return (
-    <div className="world-shell fixed inset-0">
+    <div className={shellClass}>
       <canvas
         ref={canvasRef}
         className="world-canvas relative z-0 block h-full w-full touch-none"
@@ -150,13 +186,14 @@ export default function World() {
       </div>
       <p
         className="portal-cue font-display pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-10 w-[min(100%,22rem)] -translate-x-1/2 text-center text-base text-ink transition-none"
-        style={{ opacity: showCue ? 1 : proximityId && !reduceMotion ? 0.15 : 1 }}
+        style={{
+          opacity: showCue ? 1 : proximityId && mode === 'world' && !reduceMotion ? 0.15 : 1,
+        }}
         aria-live="polite"
         role="status"
       >
-        {statusText}
+        {mode === 'world' ? (proximityId ? cueText : '\u00a0') : '\u00a0'}
       </p>
-      <ExitButton />
     </div>
   )
 }

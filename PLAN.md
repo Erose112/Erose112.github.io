@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: sections
     content: Wire syncFromLocation, the apex wipe, a native dialog whose close event exits once, and a single-frame restart crop
-    status: pending
+    status: completed
   - id: a11y-responsive
     content: Add pointer-capture touch controls, skip and hash routing, HUD, focus management, and reduced motion
     status: pending

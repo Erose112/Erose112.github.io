@@ -118,3 +118,32 @@
 - Ignore `onEnter` when React `mode !== 'world'` (per plan) — enforce in App/wrapper, not only in `Game._handlePortalTriggers`.
 - `portalLabels` refs are passed into `Game`; same hook can drive HUD later.
 - Collision list is static per session; no dynamic obstacles.
+
+## Milestone 5 — Sections (completed)
+
+### Built
+- `src/App.jsx` — mode shell (`world` | `transition` | `section` | `plain`), `syncFromLocation()` on load / `popstate` / `hashchange`, `visited` `Set` (session), enter hop → apex → wipe → `pushState` + `showModal()`, idempotent dialog `close` exit with `history.back()` or `replaceState(#world)` for deep links.
+- `src/components/SectionFrame.jsx` — native `<dialog class="section-dialog">`, scrollable body, `AboutSection` / `ExperienceSection` / `ProjectsSection`.
+- `src/components/ExitButton.jsx` — interactive restart frame-0 crop (36N×32N device px), `dialog.close()` only, “Back to desert”, `aria-keyshortcuts="Escape"`.
+- `src/game/Game.js` — `beginEnterTransition()`, apex detection (`vz` crest), `freezeAtApex()`, `placeDinoAtReturn()`, loop keeps stepping through `transition`, pauses in `section`.
+- `src/components/World.jsx` — portal enter wired to App, canvas invert wipe classes, no standalone exit preview.
+- `src/game/constants.js` — `WIPE_MS` (400).
+- `src/index.css` — dialog body height, canvas invert wipe transition / exit keyframes; reduced motion disables wipe filter.
+
+### Deviations
+- **Exit button placement:** Lives inside the dialog (not portaled to `document.body` like the milestone-2 preview). `position: fixed` keeps it clear of the safe area over scrollable section content.
+- **Night logo tiles:** Section dialogs use the night background but marquee/project logos still use the day plain-page styling (grayscale only). PLAN §6 night tiles deferred to polish / milestone 7 if needed.
+- **`#plain` routing:** `syncFromLocation` mounts `PlainPage` when hash is `#plain`; skip control and “play game” return are still milestone 6.
+- **Browser Back from a section:** `popstate` → `syncFromLocation` closes the dialog and returns to world without the 400ms exit wipe (Esc/restart still run the wipe). Forward/back hash navigation is stable.
+
+### Constants worth tuning
+- `src/game/constants.js` — `WIPE_MS` (400).
+- `src/index.css` — `.world-canvas` filter transition and `desert-wipe-out` keyframes.
+- `src/components/SectionFrame.jsx` — top padding for exit button (`pt-[calc(3.5rem+env(safe-area-inset-top))]`).
+
+### For milestone 6+
+- `visited.size` is tracked in React state (also on a hidden `data-visited-count` node for lint); wire to `Hud` “HI n/3”.
+- Focus: move focus to section `h2` on open, back to canvas + live announcement on exit.
+- Skip game, touch joystick/jump, coarse-pointer jump button → `GameInput`.
+- `ExitButton` spin remains off until frame-0 crop is verified in the dialog.
+- Deep-link section still skips the hop; dino is placed at `returnPoint` via `Game.placeDinoAtReturn()`.
