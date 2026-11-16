@@ -6,7 +6,11 @@ const titleLinkClass =
 export default function ProjectsSection() {
   return (
     <section aria-labelledby="projects-heading">
-      <h2 id="projects-heading" className="font-display text-2xl mt-12">
+      <h2
+        id="projects-heading"
+        tabIndex={-1}
+        className="font-display text-2xl mt-12 outline-none"
+      >
         {projectsSection.title}
       </h2>
 

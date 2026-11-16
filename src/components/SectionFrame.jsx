@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import AboutSection from './AboutSection.jsx'
 import ExitButton from './ExitButton.jsx'
 import ExperienceSection from './ExperienceSection.jsx'
@@ -9,6 +10,12 @@ const SECTION_CONTENT = {
   projects: ProjectsSection,
 }
 
+const SECTION_FOCUS_ID = {
+  about: 'about-heading',
+  experience: 'experience-heading',
+  projects: 'projects-heading',
+}
+
 /**
  * @param {{
  *   section: 'about' | 'experience' | 'projects' | null,
@@ -18,6 +25,22 @@ const SECTION_CONTENT = {
  */
 export default function SectionFrame({ section, dialogRef, onClose }) {
   const Content = section ? SECTION_CONTENT[section] : null
+
+  useEffect(() => {
+    if (!section) {
+      return undefined
+    }
+    const id = requestAnimationFrame(() => {
+      const dialog = dialogRef.current
+      if (!dialog?.open) {
+        return
+      }
+      const focusId = SECTION_FOCUS_ID[section]
+      const heading = dialog.querySelector(`#${focusId}`)
+      heading?.focus({ preventScroll: true })
+    })
+    return () => cancelAnimationFrame(id)
+  }, [section, dialogRef])
 
   return (
     <dialog

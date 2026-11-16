@@ -17,7 +17,7 @@ const PREVENT_CODES = new Set([
 const SQRT2 = Math.SQRT2
 
 /**
- * Keyboard input for the desert loop. Touch controls attach in a later milestone.
+ * Keyboard and on-screen touch input for the desert loop.
  */
 export class GameInput {
   constructor() {
@@ -25,6 +25,7 @@ export class GameInput {
     this.inputLocked = false
     this.jumpQueued = false
     this.jumpHeld = false
+    this.touchAxis = { x: 0, y: 0 }
     this._shouldPrevent = () => true
     this._onKeyDown = this._onKeyDown.bind(this)
     this._onKeyUp = this._onKeyUp.bind(this)
@@ -53,12 +54,30 @@ export class GameInput {
     this.inputLocked = locked
     if (locked) {
       this.jumpQueued = false
+      this.touchAxis = { x: 0, y: 0 }
     }
   }
 
   clearAll() {
     this.held.clear()
     this.jumpQueued = false
+    this.jumpHeld = false
+    this.touchAxis = { x: 0, y: 0 }
+  }
+
+  /** @param {number} x @param {number} y */
+  setTouchAxis(x, y) {
+    this.touchAxis = { x, y }
+  }
+
+  queueTouchJump() {
+    if (!this.inputLocked) {
+      this.jumpQueued = true
+      this.jumpHeld = true
+    }
+  }
+
+  releaseTouchJump() {
     this.jumpHeld = false
   }
 
@@ -136,6 +155,19 @@ export class GameInput {
       x /= SQRT2
       y /= SQRT2
     }
+
+    const tx = this.touchAxis.x
+    const ty = this.touchAxis.y
+    if (tx !== 0 || ty !== 0) {
+      x += tx
+      y += ty
+      const mag = Math.hypot(x, y)
+      if (mag > 1) {
+        x /= mag
+        y /= mag
+      }
+    }
+
     return { x, y }
   }
 

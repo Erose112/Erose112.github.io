@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: a11y-responsive
     content: Add pointer-capture touch controls, skip and hash routing, HUD, focus management, and reduced motion
-    status: pending
+    status: completed
   - id: credit-perf
     content: Preload the 1x sheet, lazy-load section images, and extend the BSD attribution
     status: pending

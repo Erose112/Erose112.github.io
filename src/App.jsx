@@ -6,6 +6,12 @@ import { WIPE_MS } from './game/constants.js'
 
 const SECTION_IDS = ['about', 'experience', 'projects']
 
+const PORTAL_FOCUS_NAMES = {
+  about: 'About',
+  experience: 'Experience',
+  projects: 'Projects',
+}
+
 /** @param {string} raw */
 function hashBody(raw) {
   if (!raw || raw === '#') {
@@ -42,7 +48,9 @@ export default function App() {
   const [wipe, setWipe] = useState('none')
 
   const dialogRef = useRef(/** @type {HTMLDialogElement | null} */ (null))
+  const worldCanvasRef = useRef(/** @type {HTMLCanvasElement | null} */ (null))
   const gameRef = useRef(/** @type {import('./game/Game.js').Game | null} */ (null))
+  const focusCanvasEpochRef = useRef(0)
   const modeRef = useRef(mode)
   const exitBusyRef = useRef(false)
   const pendingSectionRef = useRef(/** @type {'about' | 'experience' | 'projects' | null} */ (null))
@@ -52,6 +60,8 @@ export default function App() {
     /** @type {'about' | 'experience' | 'projects' | null} */ (null),
   )
   const wipeTimerRef = useRef(0)
+  const [exitAnnouncement, setExitAnnouncement] = useState('')
+  const [focusCanvasEpoch, setFocusCanvasEpoch] = useState(0)
   const [reduceMotion] = useState(
     () =>
       typeof window !== 'undefined' &&
@@ -85,8 +95,13 @@ export default function App() {
     dialog.close()
   }, [])
 
+  const focusWorldCanvas = useCallback(() => {
+    focusCanvasEpochRef.current += 1
+    setFocusCanvasEpoch(focusCanvasEpochRef.current)
+  }, [])
+
   const applyWorld = useCallback(
-    (returnPortal) => {
+    (returnPortal, announcePortal) => {
       const game = gameRef.current
       game?.setLoopMode('world')
       game?.setInputLocked(false)
@@ -97,8 +112,13 @@ export default function App() {
       setMode('world')
       setSection(null)
       setWipe('none')
+      if (announcePortal) {
+        const label = PORTAL_FOCUS_NAMES[announcePortal] ?? announcePortal
+        setExitAnnouncement(`Back in the desert, at the ${label} portal.`)
+      }
+      focusWorldCanvas()
     },
-    [],
+    [focusWorldCanvas],
   )
 
   const syncFromLocation = useCallback(() => {
@@ -111,13 +131,19 @@ export default function App() {
       setMode('plain')
       setSection(null)
       setWipe('none')
+      lastReturnPortalRef.current = null
       return
     }
 
     if (body === 'world' || !isSectionId(body)) {
       closeSectionDialog()
       const returnPortal = lastReturnPortalRef.current
-      applyWorld(returnPortal)
+      const announce =
+        returnPortal &&
+        (modeRef.current === 'section' || modeRef.current === 'transition')
+          ? returnPortal
+          : null
+      applyWorld(returnPortal, announce)
       lastReturnPortalRef.current = null
       pendingSectionRef.current = null
       pushedEntryRef.current = false
@@ -266,20 +292,41 @@ export default function App() {
 
   useEffect(() => () => clearWipeTimer(), [clearWipeTimer])
 
+  useEffect(() => {
+    if (focusCanvasEpoch === 0) {
+      return
+    }
+    worldCanvasRef.current?.focus({ preventScroll: true })
+  }, [focusCanvasEpoch])
+
+  const handleSkip = useCallback(() => {
+    window.history.pushState(null, '', '#plain')
+    syncFromLocation()
+  }, [syncFromLocation])
+
+  const handlePlayGame = useCallback(() => {
+    window.history.pushState(null, '', '#world')
+    syncFromLocation()
+    focusWorldCanvas()
+  }, [syncFromLocation, focusWorldCanvas])
+
   const showWorld = mode !== 'plain'
 
   return (
     <>
-      <span className="sr-only" aria-hidden data-visited-count={visited.size} />
       {showWorld ? (
         <World
           mode={mode}
           wipe={wipe}
+          visitedCount={visited.size}
+          onSkip={handleSkip}
+          worldCanvasRef={worldCanvasRef}
+          exitAnnouncement={exitAnnouncement}
           onGameReady={handleGameReady}
           onPortalEnter={handlePortalEnter}
         />
       ) : null}
-      {mode === 'plain' ? <PlainPage /> : null}
+      {mode === 'plain' ? <PlainPage onPlayGame={handlePlayGame} /> : null}
       <SectionFrame
         section={section}
         dialogRef={dialogRef}

@@ -147,3 +147,29 @@
 - Skip game, touch joystick/jump, coarse-pointer jump button → `GameInput`.
 - `ExitButton` spin remains off until frame-0 crop is verified in the dialog.
 - Deep-link section still skips the hop; dino is placed at `returnPoint` via `Game.placeDinoAtReturn()`.
+
+## Milestone 6 — Phone, skip, HUD, focus (completed)
+
+### Built
+- `src/components/Hud.jsx` — **SKIP GAME** (top-left, safe area), **HI n/3** (top-right, session `visited` count).
+- `src/components/TouchControls.jsx` — CSS joystick + **JUMP** button with `setPointerCapture`, deadzone **0.2**, simultaneous stick + jump; mounts only for `(pointer: coarse)` while `world` / `transition`.
+- `src/game/input.js` — `setTouchAxis`, `queueTouchJump` / `releaseTouchJump`, touch + keyboard axis merge with clamped magnitude.
+- `src/game/constants.js` — `JOYSTICK_DEADZONE`.
+- `src/App.jsx` — `handleSkip` (`pushState` `#plain`), `handlePlayGame` (`#world`), exit live announcement, canvas refocus after section exit.
+- `src/components/PlainPage.jsx` — **PLAY GAME** button.
+- `src/components/SectionFrame.jsx` — focus section heading when dialog opens (`about-heading` h1, experience/projects h2).
+- `src/index.css` — portal cue lifted above touch controls on coarse pointers; joystick `touch-action: none`.
+
+### Deviations
+- **About section focus target:** PLAN §8 says focus the section `h2`; About dialog lead is `h1` (`#about-heading`), so focus lands there (first heading in the section). Experience and Projects use their `h2` ids as specified.
+- **Portal cue position:** Extra bottom offset on `(pointer: coarse)` so the cue does not sit under joystick/jump; fine pointer keeps the original bottom inset.
+
+### Constants worth tuning
+- `src/game/constants.js` — `JOYSTICK_DEADZONE` (0.2).
+- `src/components/TouchControls.jsx` — stick size `h-28 w-28`, `KNOB_TRAVEL` (40px), jump button placement with `safe-area-inset-*`.
+- `src/index.css` — `.world-shell .portal-cue` coarse vs fine bottom offsets.
+
+### For milestone 7+
+- Lazy-load section/marquee images; preload sheet is already in `index.html` (milestone 2) — milestone 7 may tighten “early” request + footer BSD credit on plain page.
+- `ExitButton` spin still off until frame-0 crop verified.
+- Night logo tiles on section dialogs still use plain-page grayscale styling (carried from milestone 5).

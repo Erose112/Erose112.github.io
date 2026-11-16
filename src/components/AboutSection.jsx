@@ -9,7 +9,8 @@ export default function AboutSection({ showHeading = true }) {
       {showHeading ? (
         <h1
           id="about-heading"
-          className="font-display text-base lg:text-[32px] leading-tight"
+          tabIndex={-1}
+          className="font-display text-base lg:text-[32px] leading-tight outline-none"
         >
           {site.name}
         </h1>

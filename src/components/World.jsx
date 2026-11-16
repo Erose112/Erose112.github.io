@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { CUE_BLINK_MS } from '../game/constants.js'
 import { Game } from '../game/Game.js'
+import Hud from './Hud.jsx'
+import TouchControls from './TouchControls.jsx'
 
 const PORTAL_LABELS = [
   { id: 'about', text: 'ABOUT' },
@@ -18,11 +20,24 @@ const PORTAL_ARIA_NAMES = {
  * @param {{
  *   mode: 'world' | 'transition' | 'section' | 'plain',
  *   wipe: 'none' | 'enter' | 'exit',
+ *   visitedCount: number,
+ *   onSkip: () => void,
+ *   worldCanvasRef?: import('react').RefObject<HTMLCanvasElement | null>,
+ *   exitAnnouncement?: string,
  *   onGameReady: (game: import('../game/Game.js').Game) => void,
  *   onPortalEnter: (id: 'about' | 'experience' | 'projects', game: import('../game/Game.js').Game) => void,
  * }} props
  */
-export default function World({ mode, wipe, onGameReady, onPortalEnter }) {
+export default function World({
+  mode,
+  wipe,
+  visitedCount,
+  onSkip,
+  worldCanvasRef,
+  exitAnnouncement = '',
+  onGameReady,
+  onPortalEnter,
+}) {
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const observerRef = useRef(null)
@@ -39,6 +54,9 @@ export default function World({ mode, wipe, onGameReady, onPortalEnter }) {
     () =>
       typeof window !== 'undefined' &&
       window.matchMedia('(pointer: coarse)').matches,
+  )
+  const [gameInput, setGameInput] = useState(
+    /** @type {import('../game/input.js').GameInput | null} */ (null),
   )
 
   const onGameReadyRef = useRef(onGameReady)
@@ -80,6 +98,9 @@ export default function World({ mode, wipe, onGameReady, onPortalEnter }) {
       },
     })
     gameRef.current = game
+    if (worldCanvasRef) {
+      worldCanvasRef.current = canvas
+    }
     if (import.meta.env.DEV) {
       canvas.__portfolioGame = game
     }
@@ -112,16 +133,25 @@ export default function World({ mode, wipe, onGameReady, onPortalEnter }) {
     }
     observerRef.current = ro
 
-    game.start()
-    canvas.focus({ preventScroll: true })
+    let cancelled = false
+    ;(async () => {
+      await game.start()
+      if (cancelled) {
+        return
+      }
+      setGameInput(game.input)
+      canvas.focus({ preventScroll: true })
+    })()
 
     return () => {
+      cancelled = true
       ro.disconnect()
       observerRef.current = null
       game.destroy()
       gameRef.current = null
+      setGameInput(null)
     }
-  }, [])
+  }, [worldCanvasRef])
 
   useEffect(() => {
     const game = gameRef.current
@@ -149,6 +179,18 @@ export default function World({ mode, wipe, onGameReady, onPortalEnter }) {
   const showCue =
     mode === 'world' && proximityId && (reduceMotion || cueVisible)
 
+  const showHud = mode === 'world' || mode === 'transition'
+  const showTouch =
+    coarsePointer && (mode === 'world' || mode === 'transition')
+
+  const preventGameDefault = () => {
+    const game = gameRef.current
+    if (!game) {
+      return false
+    }
+    return game.loopMode === 'world' || game.loopMode === 'transition'
+  }
+
   const shellClass = [
     'world-shell fixed inset-0',
     wipe === 'enter' && !reduceMotion ? 'world-shell--wipe-enter' : '',
@@ -159,8 +201,22 @@ export default function World({ mode, wipe, onGameReady, onPortalEnter }) {
 
   return (
     <div className={shellClass}>
+      <p className="sr-only" aria-live="polite">
+        {exitAnnouncement}
+      </p>
+      <Hud visitedCount={visitedCount} onSkip={onSkip} show={showHud} />
+      <TouchControls
+        input={gameInput}
+        show={showTouch}
+        shouldPreventDefault={preventGameDefault}
+      />
       <canvas
-        ref={canvasRef}
+        ref={(node) => {
+          canvasRef.current = node
+          if (worldCanvasRef) {
+            worldCanvasRef.current = node
+          }
+        }}
         className="world-canvas relative z-0 block h-full w-full touch-none"
         width={1}
         height={1}

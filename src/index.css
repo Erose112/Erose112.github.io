@@ -118,3 +118,18 @@ dialog.section-dialog::backdrop {
     animation: none;
   }
 }
+
+.touch-joystick,
+.touch-joystick-knob {
+  touch-action: none;
+}
+
+.world-shell .portal-cue {
+  bottom: max(5.5rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
+}
+
+@media (pointer: fine) {
+  .world-shell .portal-cue {
+    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+}

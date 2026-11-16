@@ -6,7 +6,8 @@ export default function ExperienceSection() {
     <section aria-labelledby="experience-heading">
       <h2
         id="experience-heading"
-        className="font-display text-2xl mt-12"
+        tabIndex={-1}
+        className="font-display text-2xl mt-12 outline-none"
       >
         {experienceSection.title}
       </h2>
