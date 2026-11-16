@@ -37,6 +37,12 @@ body {
   will-change: transform;
 }
 
+.portal-label--visited {
+  background-color: var(--color-ink);
+  color: var(--color-desert);
+  padding: 0 4px;
+}
+
 .font-display {
   font-family: var(--font-display);
   -webkit-font-smoothing: none;
@@ -57,47 +63,151 @@ dialog.section-dialog {
   width: 100%;
   height: 100dvh;
   max-height: 100dvh;
-  background-color: var(--color-night);
-  color: var(--color-night-ink);
+  background: transparent;
+  color: var(--color-ink);
 }
 
 dialog.section-dialog::backdrop {
-  background-color: var(--color-night);
+  background-color: transparent;
+  background-image:
+    conic-gradient(from 90deg at 1px 1px, var(--color-ink) 90deg, transparent 0),
+    linear-gradient(var(--color-desert), var(--color-desert));
+  background-size: 2px 2px, auto;
+  opacity: 0.92;
+}
+
+.section-dialog-panel {
+  margin: 12px;
+  height: calc(100% - 24px);
+  max-height: calc(100dvh - 24px);
+  border: 4px solid var(--color-ink);
+  background-color: var(--color-desert);
+  color: var(--color-ink);
+  overflow: hidden;
 }
 
 .section-dialog-body {
   height: 100%;
-  max-height: 100dvh;
+  max-height: 100%;
+}
+
+.section-copy {
+  font-family: var(--font-body);
+  font-size: 28px;
+  line-height: 1.45;
+  max-width: 62ch;
+}
+
+@media (min-width: 900px) {
+  .section-copy {
+    font-size: 32px;
+  }
+}
+
+.section-meta {
+  font-size: 24px;
+  line-height: 1.45;
 }
 
 .world-canvas {
-  filter: invert(0);
-  transition: filter 400ms ease;
+  opacity: 1;
 }
 
 .world-shell--wipe-enter .world-canvas {
-  filter: invert(1);
+  animation: desert-blink-wipe 300ms step-start forwards;
 }
 
-.world-shell--wipe-exit .world-canvas {
-  animation: desert-wipe-out 400ms ease forwards;
-}
-
-@keyframes desert-wipe-out {
-  from {
-    filter: invert(1);
+@keyframes desert-blink-wipe {
+  0% {
+    opacity: 1;
   }
-  to {
-    filter: invert(0);
+  16.6% {
+    opacity: 0.15;
+  }
+  33.3% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+  66.6% {
+    opacity: 1;
+  }
+  83.3% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .world-canvas {
-    transition: none;
-    filter: none;
     animation: none;
+    opacity: 1;
   }
+}
+
+.portal-edge-hint {
+  position: absolute;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-ink);
+  pointer-events: none;
+  padding: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+.portal-edge-hint--left {
+  left: max(0.5rem, env(safe-area-inset-left, 0px));
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.portal-edge-hint--right {
+  right: max(0.5rem, env(safe-area-inset-right, 0px));
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.portal-edge-hint--top {
+  top: max(4.5rem, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.portal-edge-hint--bottom {
+  bottom: max(6rem, env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.portal-edge-arrow {
+  width: 0;
+  height: 0;
+  border: solid transparent;
+  border-width: 6px 0 6px 10px;
+  border-left-color: var(--color-ink);
+}
+
+.portal-edge-hint--right .portal-edge-arrow {
+  border-width: 6px 10px 6px 0;
+  border-right-color: var(--color-ink);
+  border-left-color: transparent;
+}
+
+.portal-edge-hint--top .portal-edge-arrow {
+  border-width: 0 6px 10px;
+  border-bottom-color: var(--color-ink);
+  border-left-color: transparent;
+}
+
+.portal-edge-hint--bottom .portal-edge-arrow {
+  border-width: 10px 6px 0;
+  border-top-color: var(--color-ink);
+  border-left-color: transparent;
 }
 
 @keyframes logo-marquee {
@@ -132,4 +242,32 @@ dialog.section-dialog::backdrop {
   .world-shell .portal-cue {
     bottom: max(1rem, env(safe-area-inset-bottom, 0px));
   }
+}
+
+.description-clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.game-action-btn {
+  cursor: pointer;
+}
+
+.game-action-btn:hover {
+  background-color: var(--color-ink);
+  color: var(--color-desert);
+}
+
+.game-action-btn:focus-visible {
+  background-color: var(--color-ink);
+  color: var(--color-desert);
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+.section-exit-btn.game-action-btn:hover img,
+.section-exit-btn.game-action-btn:focus-visible img {
+  filter: invert(1);
 }

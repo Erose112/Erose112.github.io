@@ -1,16 +1,19 @@
 import { assetUrl } from '../assetUrl.js'
 
-export const WORLD_WIDTH = 1600
-export const WORLD_HEIGHT = 960
-export const SKY_BOTTOM = 150
-export const GROUND_TOP = 180
-export const GROUND_BOTTOM = 920
+export const WORLD_WIDTH = 960
+export const WORLD_HEIGHT = 560
+export const SKY_BOTTOM = 100
+export const GROUND_TOP = 120
+export const GROUND_BOTTOM = 540
 export const WALK_LEFT = 24
-export const WALK_RIGHT = 1576
+export const WALK_RIGHT = 936
 
 export const DESERT_COLOR = '#f7f7f7'
+export const DUNE_TINT = '#ebebeb'
 
-export const SPAWN = { x: 800, y: 760, facingRight: true }
+export const WORLD_SEED = 0x657468616e
+
+export const SPAWN = { x: 480, y: 430, facingRight: true }
 
 /** Gate geometry (PLAN §4). */
 export const GATE_GAP = 48
@@ -23,31 +26,47 @@ export const PORTAL_TRIGGER_W = 40
 export const PORTAL_TRIGGER_H = 28
 export const PORTAL_RETURN_OFFSET_Y = 72
 export const CUE_BLINK_MS = 1000 / 3
-export const WIPE_MS = 400
+export const WIPE_MS = 300
+export const WIPE_BLINK_STEPS = 3
 export const JOYSTICK_DEADZONE = 0.2
 
 /** Opening centers; return point is same x, y + PORTAL_RETURN_OFFSET_Y. */
 export const PORTAL_DEFS = [
-  { id: 'about', x: 340, y: 460, label: 'ABOUT' },
-  { id: 'experience', x: 800, y: 300, label: 'EXPERIENCE' },
-  { id: 'projects', x: 1260, y: 460, label: 'PROJECTS' },
+  { id: 'about', x: 220, y: 300, label: 'ABOUT' },
+  { id: 'experience', x: 480, y: 190, label: 'EXPERIENCE' },
+  { id: 'projects', x: 740, y: 300, label: 'PROJECTS' },
 ]
 
 export const HEADROOM = 147
-/** PLAN cites 56px; use strip height (12) so ground reads continuous in the camera window. */
-export const HORIZON_TILE_STEP_Y = 12
 
-/** Horizon strip: try 52 if 54 clips bumps (see PLAN §5). */
-export const HORIZON_SOURCE_Y = 52
+export const HORIZON_SLICE_MIN_W = 24
+export const HORIZON_SLICE_MAX_W = 80
 
-export const CLOUD_COUNT = 4
-export const CLOUD_DRIFT_PX_PER_SEC = 30
+export const CLOUD_COUNT = 6
+export const CLOUD_PARALLAX = 0.3
+export const CLOUD_SPEED_MIN = 12
+export const CLOUD_SPEED_MAX = 30
+export const CLOUD_RESPAWN_GAP_MIN = 80
+export const CLOUD_RESPAWN_GAP_MAX = 360
+
+export const PROP_COUNT_MIN = 14
+export const PROP_COUNT_MAX = 20
+export const PROP_MIN_SPACING = 56
+export const GATE_OPENING_CLEAR_PX = 90
+export const PROP_PATH_CLEAR_PX = 40
+
+export const PTERO_INTERVAL_MIN_S = 25
+export const PTERO_INTERVAL_MAX_S = 40
+export const PTERO_FRAME_MS = 1000 / 6
+
+export const DUST_FRAME_COUNT = 6
+export const DUST_SPAWN_INTERVAL_S = 0.08
 
 export const BLINK_FRAME_MS = 1000 / 3
 export const BLINK_DELAY_MIN_MS = 3000
 export const BLINK_DELAY_MAX_MS = 7000
 
-export const MOVE_SPEED = 180
+export const MOVE_SPEED = 240
 export const RUN_FRAME_MS = 1000 / 12
 
 export const FOOTPRINT_W = 28
@@ -64,7 +83,13 @@ export const INK_COLOR = '#535353'
 export const SHADOW_W = 30
 export const SHADOW_H = 8
 
+export const WELCOME_DISMISS_MS = 8000
+export const WELCOME_BLINK_MS = 1000 / 3
+
 export const SPRITE_SHEET_URL = assetUrl('sprites/100-offline-sprite.png')
+
+/** Horizon strip: try 52 if 54 clips bumps (see PLAN §5). */
+export const HORIZON_SOURCE_Y = 52
 
 export function cameraAnchor(visibleHeight) {
   return Math.max(0.5, Math.min(0.85, HEADROOM / visibleHeight))

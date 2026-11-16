@@ -4,8 +4,8 @@ export default function ExpandableDescription({ children }) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="mt-3">
-      <p className={expanded ? undefined : 'truncate'}>{children}</p>
+    <div className="mt-3 section-copy">
+      <p className={expanded ? undefined : 'description-clamp'}>{children}</p>
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}

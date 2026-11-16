@@ -11,7 +11,7 @@ export default function PlainPage({ onPlayGame }) {
         <p className="mb-6">
           <button
             type="button"
-            className="font-display border-2 border-ink bg-desert px-2 py-2 text-base text-ink hover:bg-ink hover:text-desert"
+            className="game-action-btn font-display border-2 border-ink bg-desert px-2 py-2 text-base text-ink"
             onClick={onPlayGame}
           >
             PLAY GAME

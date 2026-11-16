@@ -9,6 +9,7 @@ export const ATLAS = {
   cactusSmall: { x: 228, y: 2, w: 17, h: 35 },
   restart: { x: 2, y: 68, w: 36, h: 32 },
   pterodactyl: { x: 134, y: 2, w: 46, h: 40 },
+  pterodactylFrame2: { x: 180, y: 2, w: 46, h: 40 },
 }
 
 export const TREX_FRAME_OFFSET = {

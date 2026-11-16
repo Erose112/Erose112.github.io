@@ -195,3 +195,35 @@
 ### For optional milestones+
 - `ExitButton` spin, audio, night toggle, pterodactyl remain optional per PLAN §9.
 - Night logo tiles on section dialogs still use plain-page grayscale marquee styling.
+
+## P1 — Polish pass (completed)
+
+### Built
+- **World layout:** `960×560` game px, walkable `x 24–936`, `y 120–540`, sky band `0–100`, spawn `(480, 430)`, portals About `(220, 300)`, Experience `(480, 190)`, Projects `(740, 300)`, `MOVE_SPEED` **240**; camera still uses `HEADROOM` / `cameraAnchor()`.
+- **Edge hints:** DOM pixel arrows + gate labels for **unvisited** portals off-screen (`World.jsx`, `Game.isPortalVisible()`, `index.css` `.portal-edge-*`).
+- **Props:** `src/game/props.js` — **14–20** seeded clusters (1–3 small/large plants), `PROP_MIN_SPACING` **56**, `GATE_OPENING_CLEAR_PX` **90**, `PROP_PATH_CLEAR_PX` **40** from spawn→gate paths; base footprints merged into `Game.allSolids`; y-sorted in `drawSortedActors`.
+- **Dust / ptero:** Foot dust puffs while running (`DUST_*` in `entities.js`); decorative pterodactyl every **25–40s** in top third, no collision, disabled when reduced motion.
+- **Ground:** `src/game/ground.js` — pre-rendered offscreen canvas (`WORLD_SEED`), scattered horizon slices **24–80px**, pebbles/tufts, gate-adjacent density, dotted paths, optional `#ebebeb` dune dither; replaces horizon row tiling.
+- **Clouds:** Screen-space layer — **6** clouds, **12–30 px/s**, `CLOUD_PARALLAX` **0.3**, top third of view. Outline atlas crop is filled once via `buildCloudSprite()` (interior `#dadada`, exterior stays transparent). Spawn/respawn **off the left** (`CLOUD_RESPAWN_GAP_*`); exit only after the **parallax draw X** clears the right edge — never pop in mid-view. Drawn in `drawSortedActors` between cactus and dino/ptero (`DRAW_LAYER_*`); cull/respawn use `cloudDrawScreenX` so parallax matches visibility.
+- **Sections:** Day palette (`#f7f7f7` / `#535353`), **4px** inset panel **12px**, checkerboard `::backdrop` over desert; **300ms** 3-step opacity blink instead of invert wipe (`WIPE_MS`, `index.css` `desert-blink-wipe`); project logos grayscale hover only (no night tiles).
+- **Typography:** `.section-copy` **28px** (**32px** `md+`), `line-height` **1.45**, **62ch**; `.section-meta` **24px**; `ExpandableDescription` **3-line** clamp + Show more/less.
+- **Welcome / HUD:** Press Start 2P banner + touch/desktop copy, blink `WELCOME_BLINK_MS`, dismiss on move or `WELCOME_DISMISS_MS` **8s**, `aria-live`; permanent **ETHAN ROSE** label; visited portal labels invert (`.portal-label--visited`); **HI n/3** blinks `HI_BLINK_TIMES` × at `HI_BLINK_MS` on first visit (`Hud.jsx`, `visitedPulse` in `App.jsx`).
+- **RNG:** `src/game/rng.js` (`WORLD_SEED`).
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/constants.js` | `WORLD_*`, `SKY_BOTTOM`, `GROUND_*`, `WALK_*`, `SPAWN`, `PORTAL_DEFS`, `MOVE_SPEED`, `HEADROOM`, `WORLD_SEED`, `HORIZON_SLICE_*`, `CLOUD_COUNT`, `CLOUD_PARALLAX`, `CLOUD_SPEED_*`, `CLOUD_RESPAWN_GAP_*`, `PROP_*`, `GATE_OPENING_CLEAR_PX`, `PROP_PATH_CLEAR_PX`, `PTERO_*`, `DUST_*`, `WIPE_MS`, `WIPE_BLINK_STEPS`, `WELCOME_*`, `HI_BLINK_*`, `DUNE_TINT`, jump/move/HUD portal geometry (unchanged names) |
+| `src/game/ground.js` | Slice/pebble/tuft/dune counts (inline in `buildGroundCanvas`) |
+| `src/game/props.js` | Uses `PROP_*`, `GATE_OPENING_CLEAR_PX`, `PROP_PATH_CLEAR_PX` |
+| `src/game/entities.js` | Ptero fly speed **140** px/s (inline in `updatePterodactyl`) |
+| `src/index.css` | Section panel inset **12px**, border **4px**, wipe keyframes **300ms**, edge-hint layout |
+| `src/components/Hud.jsx` | Uses `HI_BLINK_MS`, `HI_BLINK_TIMES` |
+| `src/components/World.jsx` | Uses `WELCOME_*`, `CUE_BLINK_MS` |
+
+### Deviations
+- **Pterodactyl atlas frame 2** assumed at **x 180** on the 1× sheet (46px stride); verify visually against `public/sprites/100-offline-sprite.png`.
+- **Ground build** runs once after `sprite.decode()`; slice draw uses live `drawImage` from the sheet into the static ground canvas.
+- **Cloud fill** is runtime (`buildCloudSprite`), not baked into `100-offline-sprite.png`; sheet outline stays hollow for Chromium fidelity.
+- **Cloud draw order** is layer-hard (cactus behind clouds; clouds behind dino/ptero). Dino vs cactus still y-sorts by foot y.
+- **Section backdrop** uses CSS checkerboard + desert tint rather than sampling the live canvas bitmap (canvas remains visible underneath transparent dialog root).

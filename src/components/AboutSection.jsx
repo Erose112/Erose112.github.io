@@ -10,22 +10,22 @@ export default function AboutSection({ showHeading = true }) {
         <h1
           id="about-heading"
           tabIndex={-1}
-          className="font-display text-base lg:text-[32px] leading-tight outline-none"
+          className="font-display text-base md:text-2xl leading-tight outline-none"
         >
           {site.name}
         </h1>
       ) : null}
 
-      <p className="mt-4 max-w-5xl font-body text-2xl leading-[1.35]">
+      <p className="section-copy mt-4">
         {site.intro}
       </p>
 
-      <p className="mt-2 max-w-5xl font-body text-2xl leading-[1.35]">
+      <p className="section-copy mt-2">
         <span className="font-bold">{site.aboutLabel}</span>{' '}
         {site.aboutBody}
       </p>
 
-      <p className="mt-8 max-w-5xl font-body text-2xl leading-[1.35]">
+      <p className="section-copy mt-8">
         {site.socialIntro}{' '}
         <a
           href={site.linkedIn.href}
@@ -47,7 +47,7 @@ export default function AboutSection({ showHeading = true }) {
         .
       </p>
 
-      <p className="mt-4 max-w-5xl font-body text-2xl leading-[1.35]">
+      <p className="section-copy mt-4">
         Check out my{' '}
         <a
           href={site.resume.href}
@@ -69,9 +69,9 @@ export default function AboutSection({ showHeading = true }) {
         .
       </p>
 
-      <h2 className="font-display text-2xl mt-10">{site.hobbiesTitle}</h2>
+      <h2 className="font-display text-base md:text-2xl mt-10">{site.hobbiesTitle}</h2>
 
-      <p className="mt-4 max-w-5xl font-body text-2xl leading-[1.35]">
+      <p className="section-copy mt-4">
         {site.hobbiesBody}
       </p>
     </section>

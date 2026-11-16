@@ -6,23 +6,29 @@ import {
   WORLD_WIDTH,
 } from './constants.js'
 import {
-  createClouds,
   createDino,
+  createDustState,
   createPortals,
-  drawClouds,
-  drawHorizonTiles,
+  createPterodactylState,
+  buildCloudSprite,
+  createScreenClouds,
+  drawDust,
   drawSky,
   drawSortedActors,
   drawWorldMargins,
-  layoutCloudsForView,
+  layoutScreenClouds,
   portalLabelAnchor,
   portalOverlappingTrigger,
   portalSolidColliders,
-  updateClouds,
   updateDinoAnimation,
   updateDinoMoveAndJump,
+  updateDust,
+  updatePterodactyl,
+  updateScreenClouds,
 } from './entities.js'
+import { buildGroundCanvas, drawGroundLayer } from './ground.js'
 import { GameInput } from './input.js'
+import { createPropCacti, propSolidColliders } from './props.js'
 import { applyCanvasScale } from './scale.js'
 
 const MAX_DT = 0.05
@@ -48,6 +54,7 @@ function clampCamera(camX, camY, viewW, viewH) {
  *   onProximity?: (id: import('./entities.js').PortalGate['id'] | null) => void,
  *   onEnter?: (id: import('./entities.js').PortalGate['id']) => void,
  *   onApex?: () => void,
+ *   onFirstMovement?: () => void,
  *   portalLabels?: Record<string, HTMLElement | null>,
  * }} GameOptions
  */
@@ -59,6 +66,7 @@ export class Game {
     this.onProximity = options.onProximity ?? (() => {})
     this.onEnter = options.onEnter ?? (() => {})
     this.onApex = options.onApex ?? (() => {})
+    this.onFirstMovement = options.onFirstMovement ?? (() => {})
     this.portalLabels = options.portalLabels ?? {}
     this.disposed = false
     this.rafId = 0
@@ -68,9 +76,17 @@ export class Game {
     this.sprite = new Image()
     this.sprite.src = SPRITE_SHEET_URL
     this.dino = createDino()
-    this.clouds = createClouds()
+    this.clouds = createScreenClouds()
     this.portals = createPortals()
+    this.props = createPropCacti()
     this.portalSolids = portalSolidColliders(this.portals)
+    this.propSolids = propSolidColliders(this.props)
+    this.allSolids = [...this.portalSolids, ...this.propSolids]
+    this.dust = createDustState()
+    this.ptero = createPterodactylState()
+    this.groundCanvas = null
+    /** @type {HTMLCanvasElement | null} */
+    this.cloudSprite = null
     this.ctx = null
     this.viewW = 0
     this.viewH = 0
@@ -88,6 +104,7 @@ export class Game {
     this._awaitingApex = false
     this._prevVz = 0
     this._frozenAtApex = false
+    this._movementAnnounced = false
 
     this._onFrame = this._onFrame.bind(this)
     this._onVisibility = this._onVisibility.bind(this)
@@ -137,6 +154,44 @@ export class Game {
     this._awaitingApex = false
   }
 
+  getDinoScreenHead() {
+    const scale = this.cssPxPerGame
+    return {
+      x: (this.dino.footX - this.camX) * scale,
+      y: (this.dino.footY - this.camY - 47 - this.dino.z) * scale,
+    }
+  }
+
+  getCameraState() {
+    return {
+      camX: this.camX,
+      camY: this.camY,
+      viewW: this.viewW,
+      viewH: this.viewH,
+      portals: this.portals.map((g) => ({
+        id: g.id,
+        label: g.label,
+        anchor: portalLabelAnchor(g),
+        centerX: g.centerX,
+        footY: g.footY,
+      })),
+    }
+  }
+
+  isPortalVisible(anchor) {
+    const margin = 8
+    const left = this.camX + margin
+    const right = this.camX + this.viewW - margin
+    const top = this.camY + margin
+    const bottom = this.camY + this.viewH - margin
+    return (
+      anchor.x >= left &&
+      anchor.x <= right &&
+      anchor.y >= top &&
+      anchor.y <= bottom
+    )
+  }
+
   _isLoopActive() {
     if (document.hidden) {
       return false
@@ -153,6 +208,8 @@ export class Game {
     if (this.disposed) {
       return
     }
+    this.groundCanvas = buildGroundCanvas(this.sprite)
+    this.cloudSprite = buildCloudSprite(this.sprite)
     document.addEventListener('visibilitychange', this._onVisibility)
     this.input = new GameInput()
     this.input.attach(() => this._isLoopActive())
@@ -188,6 +245,8 @@ export class Game {
     this.scaleS = applied.S
     this.cssPxPerGame = applied.S / dpr
 
+    layoutScreenClouds(this.clouds, this.viewW, this.viewH)
+
     const anchor = cameraAnchor(this.viewH)
     const footScreenY = anchor * this.viewH
     const targetX = this.dino.footX - this.viewW / 2
@@ -195,7 +254,6 @@ export class Game {
     const cam = clampCamera(targetX, targetY, this.viewW, this.viewH)
     this.camX = cam.x
     this.camY = cam.y
-    layoutCloudsForView(this.clouds, this.camX, this.camY, this.viewW, this.viewH)
     this._updatePortalLabelStyles()
     this.draw()
   }
@@ -242,9 +300,24 @@ export class Game {
 
     drawWorldMargins(ctx, this.camX, this.camY, this.viewW, this.viewH)
     drawSky(ctx, this.camX, this.camY, this.viewW, this.viewH)
-    drawHorizonTiles(ctx, this.sprite, this.camX, this.camY, this.viewW, this.viewH)
-    drawClouds(ctx, this.sprite, this.clouds)
-    drawSortedActors(ctx, this.sprite, this.dino, this.portals)
+    if (this.groundCanvas) {
+      drawGroundLayer(ctx, this.groundCanvas, this.camX, this.camY, this.viewW, this.viewH)
+    }
+    drawSortedActors(
+      ctx,
+      this.sprite,
+      this.dino,
+      this.portals,
+      this.props,
+      this.cloudSprite,
+      this.clouds,
+      this.camX,
+      this.camY,
+      this.viewW,
+      this.viewH,
+      this.ptero,
+    )
+    drawDust(ctx, this.dust)
     this._updatePortalLabelStyles()
   }
 
@@ -278,12 +351,29 @@ export class Game {
       updateDinoAnimation(this.dino, now, 0)
       this.updateCamera()
       if (!this.reduceMotion) {
-        updateClouds(this.clouds, dt, this.camX, this.viewW)
+        updateScreenClouds(this.clouds, dt, this.viewW, this.viewH, this.camX)
+        updatePterodactyl(
+          this.ptero,
+          now,
+          dt,
+          this.camX,
+          this.camY,
+          this.viewW,
+          this.viewH,
+          this.reduceMotion,
+        )
       }
       return
     }
 
     const axis = this.input?.getAxis() ?? { x: 0, y: 0 }
+    if (
+      !this._movementAnnounced &&
+      (Math.abs(axis.x) > 0.01 || Math.abs(axis.y) > 0.01)
+    ) {
+      this._movementAnnounced = true
+      this.onFirstMovement()
+    }
     const jumpEdge = this.input?.consumeJumpEdge() ?? false
     const jumpHeld = this.input?.isJumpHeld() ?? false
 
@@ -293,7 +383,7 @@ export class Game {
       dt,
       jumpEdge,
       jumpHeld,
-      this.portalSolids,
+      this.allSolids,
       this.portals,
     )
     if (this.loopMode === 'world' && enteredPortal) {
@@ -313,11 +403,24 @@ export class Game {
     this._prevVz = this.dino.vz
 
     updateDinoAnimation(this.dino, now, dt)
+    if (!this.reduceMotion) {
+      updateDust(this.dust, this.dino, dt)
+    }
     this.updateCamera()
     this._updatePortalProximity()
 
     if (!this.reduceMotion) {
-      updateClouds(this.clouds, dt, this.camX, this.viewW)
+      updateScreenClouds(this.clouds, dt, this.viewW, this.viewH, this.camX)
+      updatePterodactyl(
+        this.ptero,
+        now,
+        dt,
+        this.camX,
+        this.camY,
+        this.viewW,
+        this.viewH,
+        this.reduceMotion,
+      )
     }
   }
 

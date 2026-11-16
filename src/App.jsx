@@ -269,16 +269,9 @@ export default function App() {
       exitBusyRef.current = false
     }
 
-    if (reduceMotion) {
-      finish()
-      return
-    }
-    setWipe('exit')
-    wipeTimerRef.current = window.setTimeout(() => {
-      wipeTimerRef.current = 0
-      finish()
-    }, WIPE_MS)
-  }, [clearWipeTimer, navigateToWorldFromSection, reduceMotion])
+    setWipe('none')
+    finish()
+  }, [clearWipeTimer, navigateToWorldFromSection])
 
   useEffect(() => {
     const onNav = () => syncFromLocation()
@@ -318,7 +311,7 @@ export default function App() {
         <World
           mode={mode}
           wipe={wipe}
-          visitedCount={visited.size}
+          visited={visited}
           onSkip={handleSkip}
           worldCanvasRef={worldCanvasRef}
           exitAnnouncement={exitAnnouncement}

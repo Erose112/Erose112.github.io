@@ -1,12 +1,19 @@
 import { ATLAS, TREX_FRAME_OFFSET } from './atlas.js'
 import { footprintBox, boxesOverlap, resolveFootprintCollisions } from './collision.js'
+import { ATLAS as ATLAS_REF } from './atlas.js'
 import {
   BLINK_DELAY_MAX_MS,
   BLINK_DELAY_MIN_MS,
   BLINK_FRAME_MS,
   CLOUD_COUNT,
-  CLOUD_DRIFT_PX_PER_SEC,
+  CLOUD_PARALLAX,
+  CLOUD_RESPAWN_GAP_MAX,
+  CLOUD_RESPAWN_GAP_MIN,
+  CLOUD_SPEED_MAX,
+  CLOUD_SPEED_MIN,
   DESERT_COLOR,
+  DUST_FRAME_COUNT,
+  DUST_SPAWN_INTERVAL_S,
   FLANK_FOOTPRINT_H,
   FLANK_FOOTPRINT_W,
   FOOTPRINT_H,
@@ -15,7 +22,6 @@ import {
   GATE_GAP,
   GROUND_BOTTOM,
   GROUND_TOP,
-  HORIZON_TILE_STEP_Y,
   INK_COLOR,
   JUMP_DROP_VELOCITY,
   JUMP_GRAVITY,
@@ -30,6 +36,9 @@ import {
   PORTAL_TRIGGER_W,
   POST_FOOTPRINT_H,
   POST_FOOTPRINT_W,
+  PTERO_FRAME_MS,
+  PTERO_INTERVAL_MAX_S,
+  PTERO_INTERVAL_MIN_S,
   RUN_FRAME_MS,
   SHADOW_H,
   SHADOW_W,
@@ -39,7 +48,10 @@ import {
   WALK_RIGHT,
   WORLD_HEIGHT,
   WORLD_WIDTH,
+  WORLD_SEED,
 } from './constants.js'
+import { drawPropCactus } from './props.js'
+import { createRng, randFloat } from './rng.js'
 
 function randomBlinkDelay() {
   return BLINK_DELAY_MIN_MS + Math.random() * (BLINK_DELAY_MAX_MS - BLINK_DELAY_MIN_MS)
@@ -314,50 +326,275 @@ export function updateDinoAnimation(dino, now, dt) {
   }
 }
 
-export function createClouds() {
+/**
+ * @param {ReturnType<typeof createScreenClouds>[number]} cloud
+ * @param {number} index
+ * @param {number} viewW
+ * @param {number} viewH
+ * @param {number} [staggerPx]
+ */
+function placeCloudOffLeft(cloud, index, viewW, viewH, staggerPx = 0) {
+  const w = ATLAS.cloud.w
+  const bandH = viewH / 3
+  const rng = createRng(WORLD_SEED + 11 + index * 19)
+  cloud.screenX =
+    -w - randFloat(rng, CLOUD_RESPAWN_GAP_MIN, CLOUD_RESPAWN_GAP_MAX) - staggerPx
+  cloud.screenYOffset =
+    10 + (index % 3) * 12 + randFloat(rng, 0, Math.max(8, bandH - w - 16))
+  cloud.speed = randFloat(rng, CLOUD_SPEED_MIN, CLOUD_SPEED_MAX)
+}
+
+function respawnCloudOffLeft(cloud, index, viewW, viewH) {
+  placeCloudOffLeft(cloud, index, viewW, viewH)
+}
+
+/** Screen X after parallax; matches {@link drawSortedActors} cloud placement. */
+function cloudDrawScreenX(cloud, camX) {
+  return cloud.screenX - camX * CLOUD_PARALLAX
+}
+
+export function createScreenClouds() {
   const clouds = []
   for (let i = 0; i < CLOUD_COUNT; i++) {
     clouds.push({
-      x: 0,
-      y: 0,
-      jitterX: Math.random() * 48,
+      screenX: Number.NaN,
+      screenYOffset: 16,
+      speed: CLOUD_SPEED_MIN,
     })
   }
   return clouds
 }
 
-/** Gameplay camera at south spawn leaves world sky off-screen; lay clouds in the top of the view. */
-export function layoutCloudsForView(clouds, camX, camY, viewW, viewH) {
-  const padding = 12
-  const bandTop = camY + padding
-  const bandHeight = Math.min(Math.max(72, viewH * 0.38), viewH - padding * 2)
-  const bandBottom = bandTop + bandHeight
-  const span = Math.max(viewW - 100, 80)
-
+/** @param {ReturnType<typeof createScreenClouds>} clouds @param {number} viewW @param {number} viewH */
+export function layoutScreenClouds(clouds, viewW, viewH) {
+  const w = ATLAS.cloud.w
+  const bandH = viewH / 3
+  const laneSpacing = w + (CLOUD_RESPAWN_GAP_MIN + CLOUD_RESPAWN_GAP_MAX) * 0.35
   for (let i = 0; i < clouds.length; i++) {
     const cloud = clouds[i]
-    cloud.y = bandTop + 10 + (i % 2) * 20 + Math.min(28, bandHeight * 0.35)
-    cloud.y = Math.min(cloud.y, bandBottom - ATLAS.cloud.h)
-    cloud.x = camX + 36 + (i / Math.max(1, clouds.length - 1)) * span + cloud.jitterX
+    if (!Number.isFinite(cloud.screenX)) {
+      placeCloudOffLeft(cloud, i, viewW, viewH, i * laneSpacing)
+      continue
+    }
+    const rng = createRng(WORLD_SEED + 5 + i)
+    cloud.screenYOffset =
+      10 + (i % 3) * 12 + randFloat(rng, 0, Math.max(8, bandH - w - 16))
   }
 }
 
 /**
- * @param {{ x: number, y: number }[]} clouds
+ * @param {ReturnType<typeof createScreenClouds>} clouds
  * @param {number} dt
- * @param {number} camX
  * @param {number} viewW
+ * @param {number} viewH
+ * @param {number} camX
  */
-export function updateClouds(clouds, dt, camX, viewW) {
-  const drift = CLOUD_DRIFT_PX_PER_SEC * dt
-  const wrapLeft = camX - 80
-  const wrapRight = camX + viewW + 40
-  for (const cloud of clouds) {
-    cloud.x += drift
-    if (cloud.x > wrapRight) {
-      cloud.x = wrapLeft
+export function updateScreenClouds(clouds, dt, viewW, viewH, camX) {
+  const w = ATLAS.cloud.w
+  for (let i = 0; i < clouds.length; i++) {
+    const cloud = clouds[i]
+    if (!Number.isFinite(cloud.screenX)) {
+      placeCloudOffLeft(cloud, i, viewW, viewH, i * (w + CLOUD_RESPAWN_GAP_MIN))
+      continue
+    }
+    cloud.screenX += cloud.speed * dt
+  }
+  for (let i = 0; i < clouds.length; i++) {
+    const cloud = clouds[i]
+    if (!Number.isFinite(cloud.screenX)) {
+      continue
+    }
+    const drawX = cloudDrawScreenX(cloud, camX)
+    if (drawX > viewW + w) {
+      respawnCloudOffLeft(cloud, i, viewW, viewH)
     }
   }
+}
+
+const CLOUD_FILL_RGB = [218, 218, 218]
+
+/**
+ * The sheet cloud is an outline; fill each row’s interior so the exterior stays transparent.
+ * @param {CanvasImageSource} sheet
+ */
+export function buildCloudSprite(sheet) {
+  const { x: sx, y: sy, w, h } = ATLAS.cloud
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const cctx = canvas.getContext('2d')
+  if (!cctx) {
+    return canvas
+  }
+  cctx.drawImage(sheet, sx, sy, w, h, 0, 0, w, h)
+  const imageData = cctx.getImageData(0, 0, w, h)
+  const data = imageData.data
+  for (let py = 0; py < h; py++) {
+    let minX = w
+    let maxX = -1
+    for (let px = 0; px < w; px++) {
+      if (data[(py * w + px) * 4 + 3] === 255) {
+        if (px < minX) {
+          minX = px
+        }
+        if (px > maxX) {
+          maxX = px
+        }
+      }
+    }
+    if (maxX - minX < 1) {
+      continue
+    }
+    for (let px = minX; px <= maxX; px++) {
+      const i = (py * w + px) * 4
+      if (data[i + 3] === 0) {
+        data[i] = CLOUD_FILL_RGB[0]
+        data[i + 1] = CLOUD_FILL_RGB[1]
+        data[i + 2] = CLOUD_FILL_RGB[2]
+        data[i + 3] = 255
+      }
+    }
+  }
+  cctx.putImageData(imageData, 0, 0)
+  return canvas
+}
+
+export function createDustState() {
+  return {
+    elapsed: 0,
+    /** @type {{ x: number, y: number, age: number, size: number }[]} */
+    puffs: [],
+  }
+}
+
+/**
+ * @param {ReturnType<typeof createDustState>} dust
+ * @param {ReturnType<typeof createDino>} dino
+ * @param {number} dt
+ */
+export function updateDust(dust, dino, dt) {
+  dust.elapsed += dt
+  if (dino.z === 0 && dino.moveSpeed > 0.5) {
+    if (dust.elapsed >= DUST_SPAWN_INTERVAL_S) {
+      dust.elapsed = 0
+      dust.puffs.push({
+        x: dino.footX + (Math.random() - 0.5) * 8,
+        y: dino.footY,
+        age: 0,
+        size: 2 + Math.floor(Math.random() * 2),
+      })
+    }
+  } else {
+    dust.elapsed = 0
+  }
+
+  for (const puff of dust.puffs) {
+    puff.age += dt
+  }
+  dust.puffs = dust.puffs.filter((p) => p.age * 60 < DUST_FRAME_COUNT)
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {ReturnType<typeof createDustState>} dust
+ */
+export function drawDust(ctx, dust) {
+  ctx.fillStyle = INK_COLOR
+  for (const puff of dust.puffs) {
+    const alpha = 1 - puff.age * 60 / DUST_FRAME_COUNT
+    if (alpha <= 0) {
+      continue
+    }
+    ctx.globalAlpha = alpha * 0.55
+    ctx.fillRect(Math.round(puff.x), Math.round(puff.y - 2), puff.size, puff.size)
+  }
+  ctx.globalAlpha = 1
+}
+
+export function createPterodactylState() {
+  const rng = createRng(WORLD_SEED + 11)
+  return {
+    active: false,
+    x: 0,
+    y: 0,
+    direction: 1,
+    frame: 0,
+    frameElapsed: 0,
+    nextAt: performance.now() + randFloat(rng, PTERO_INTERVAL_MIN_S, PTERO_INTERVAL_MAX_S) * 1000,
+  }
+}
+
+/**
+ * @param {ReturnType<typeof createPterodactylState>} ptero
+ * @param {number} now
+ * @param {number} dt
+ * @param {number} camX
+ * @param {number} camY
+ * @param {number} viewW
+ * @param {number} viewH
+ * @param {boolean} reduceMotion
+ */
+export function updatePterodactyl(ptero, now, dt, camX, camY, viewW, viewH, reduceMotion) {
+  if (reduceMotion) {
+    return
+  }
+
+  if (!ptero.active) {
+    if (now >= ptero.nextAt) {
+      const rng = createRng(Math.floor(now) + WORLD_SEED)
+      ptero.active = true
+      ptero.direction = rng() < 0.5 ? -1 : 1
+      ptero.x = ptero.direction > 0 ? camX - 60 : camX + viewW + 60
+      const bandTop = camY + viewH * 0.08
+      const bandBottom = camY + viewH / 3 - ATLAS_REF.pterodactyl.h
+      ptero.y = bandTop + randFloat(rng, 0, Math.max(8, bandBottom - bandTop))
+      ptero.frame = 0
+      ptero.frameElapsed = 0
+    }
+    return
+  }
+
+  ptero.x += ptero.direction * 140 * dt
+  ptero.frameElapsed += dt * 1000
+  while (ptero.frameElapsed >= PTERO_FRAME_MS) {
+    ptero.frameElapsed -= PTERO_FRAME_MS
+    ptero.frame = ptero.frame === 0 ? 1 : 0
+  }
+
+  if (
+    (ptero.direction > 0 && ptero.x > camX + viewW + 80) ||
+    (ptero.direction < 0 && ptero.x < camX - 80)
+  ) {
+    ptero.active = false
+    const rng = createRng(Math.floor(now) + 19)
+    ptero.nextAt =
+      now + randFloat(rng, PTERO_INTERVAL_MIN_S, PTERO_INTERVAL_MAX_S) * 1000
+  }
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasImageSource} img
+ * @param {ReturnType<typeof createPterodactylState>} ptero
+ */
+export function drawPterodactyl(ctx, img, ptero) {
+  if (!ptero.active) {
+    return
+  }
+  const atlas = ptero.frame === 0 ? ATLAS_REF.pterodactyl : ATLAS_REF.pterodactylFrame2
+  const { x: sx, y: sy, w, h } = atlas
+  const drawX = Math.round(ptero.x)
+  const drawY = Math.round(ptero.y)
+  // Atlas pterodactyl faces left; flip when flying right.
+  if (ptero.direction > 0) {
+    ctx.save()
+    ctx.translate(drawX + w / 2, drawY + h / 2)
+    ctx.scale(-1, 1)
+    ctx.drawImage(img, sx, sy, w, h, -w / 2, -h / 2, w, h)
+    ctx.restore()
+    return
+  }
+  ctx.drawImage(img, sx, sy, w, h, drawX, drawY, w, h)
 }
 
 /**
@@ -372,65 +609,15 @@ export function drawSky(ctx, camX, camY, viewW, viewH) {
   const left = Math.floor(camX)
   const width = Math.ceil(viewW)
 
-  if (camY < SKY_BOTTOM) {
-    const top = Math.max(0, Math.floor(camY))
-    const bottom = Math.min(camY + viewH, SKY_BOTTOM)
-    if (bottom > top) {
-      ctx.fillRect(left, top, width, Math.ceil(bottom - top))
-    }
+  const worldSkyTop = Math.max(0, Math.floor(camY))
+  const worldSkyBottom = Math.min(camY + viewH, SKY_BOTTOM)
+  if (worldSkyBottom > worldSkyTop) {
+    ctx.fillRect(left, worldSkyTop, width, Math.ceil(worldSkyBottom - worldSkyTop))
   }
 
-  const viewportSkyH = Math.min(100, Math.max(56, viewH * 0.42))
-  if (camY + viewportSkyH <= camY + viewH) {
-    ctx.fillRect(left, Math.floor(camY), width, Math.ceil(viewportSkyH))
-  }
-}
-
-/**
- * @param {CanvasRenderingContext2D} ctx
- * @param {CanvasImageSource} img
- * @param {number} camX
- * @param {number} camY
- * @param {number} viewW
- * @param {number} viewH
- */
-export function drawHorizonTiles(ctx, img, camX, camY, viewW, viewH) {
-  const { x: sx, y: sy, w, h } = ATLAS.horizon
-  const yStart = SKY_BOTTOM
-  const yEnd = WORLD_HEIGHT
-  const xStart = Math.floor(camX / w) * w - w
-  const xEnd = camX + viewW + w
-
-  const stepY = Math.min(HORIZON_TILE_STEP_Y, h)
-  for (let ty = yStart; ty < yEnd; ty += stepY) {
-    if (ty + h < camY || ty > camY + viewH) {
-      continue
-    }
-    for (let tx = xStart; tx < xEnd; tx += w) {
-      ctx.drawImage(img, sx, sy, w, h, Math.round(tx), Math.round(ty), w, h)
-    }
-  }
-}
-
-/**
- * @param {CanvasRenderingContext2D} ctx
- * @param {CanvasImageSource} img
- * @param {{ x: number, y: number }[]} clouds
- */
-export function drawClouds(ctx, img, clouds) {
-  const { x: sx, y: sy, w, h } = ATLAS.cloud
-  for (const cloud of clouds) {
-    ctx.drawImage(
-      img,
-      sx,
-      sy,
-      w,
-      h,
-      Math.round(cloud.x),
-      Math.round(cloud.y),
-      w,
-      h,
-    )
+  const northStripH = Math.min(SKY_BOTTOM, Math.max(0, SKY_BOTTOM - camY))
+  if (northStripH > 0 && camY < SKY_BOTTOM) {
+    ctx.fillRect(left, Math.floor(camY), width, Math.ceil(Math.min(northStripH, viewH)))
   }
 }
 
@@ -510,23 +697,65 @@ export function drawPortalPart(ctx, img, gate, part) {
   drawCactus(ctx, img, foot.footX, foot.footY, kind)
 }
 
+const DRAW_LAYER_CACTUS = 0
+const DRAW_LAYER_CLOUD = 1
+const DRAW_LAYER_ACTOR = 2
+
 /**
- * @param {CanvasRenderingContext2D} ctx
- * @param {CanvasImageSource} img
- * @param {ReturnType<typeof createDino>} dino
- * @param {PortalGate[]} portals
+ * @param {{ footY: number, layer: number }} a
+ * @param {{ footY: number, layer: number }} b
+ * @returns {number}
  */
-export function drawSortedActors(ctx, img, dino, portals) {
-  /** @type {{ footY: number, draw: () => void }[]} */
+function compareDrawOrder(a, b) {
+  if (a.layer === DRAW_LAYER_CACTUS && b.layer === DRAW_LAYER_CLOUD) {
+    return -1
+  }
+  if (a.layer === DRAW_LAYER_CLOUD && b.layer === DRAW_LAYER_CACTUS) {
+    return 1
+  }
+  if (a.layer === DRAW_LAYER_CLOUD && b.layer === DRAW_LAYER_ACTOR) {
+    return -1
+  }
+  if (a.layer === DRAW_LAYER_ACTOR && b.layer === DRAW_LAYER_CLOUD) {
+    return 1
+  }
+  return a.footY - b.footY
+}
+
+/**
+ * @param {import('./props.js').PropCactus[]} props
+ * @param {CanvasImageSource | null | undefined} cloudImg
+ * @param {ReturnType<typeof createScreenClouds>} [clouds]
+ * @param {number} camX
+ * @param {number} camY
+ * @param {number} viewW
+ * @param {number} viewH
+ * @param {ReturnType<typeof createPterodactylState>} [ptero]
+ */
+export function drawSortedActors(
+  ctx,
+  img,
+  dino,
+  portals,
+  props = [],
+  cloudImg,
+  clouds,
+  camX,
+  camY,
+  viewW,
+  viewH,
+  ptero,
+) {
+  /** @type {{ footY: number, layer: number, draw: () => void }[]} */
   const items = []
 
-  items.push({
-    footY: dino.footY,
-    draw: () => {
-      drawDinoShadow(ctx, dino)
-      drawDino(ctx, img, dino)
-    },
-  })
+  for (const prop of props) {
+    items.push({
+      footY: prop.footY,
+      layer: DRAW_LAYER_CACTUS,
+      draw: () => drawPropCactus(ctx, img, prop),
+    })
+  }
 
   const parts = ['leftPost', 'rightPost', 'leftFlank', 'rightFlank']
   for (const gate of portals) {
@@ -541,12 +770,55 @@ export function drawSortedActors(ctx, img, dino, portals) {
               : gate.rightFlank
       items.push({
         footY: foot.footY,
+        layer: DRAW_LAYER_CACTUS,
         draw: () => drawPortalPart(ctx, img, gate, part),
       })
     }
   }
 
-  items.sort((a, b) => a.footY - b.footY)
+  if (cloudImg && clouds) {
+    const { w, h } = ATLAS.cloud
+    const bandLimit = viewH / 3
+    for (const cloud of clouds) {
+      if (!Number.isFinite(cloud.screenX)) {
+        continue
+      }
+      const drawX = cloudDrawScreenX(cloud, camX)
+      if (drawX + w < 0 || drawX > viewW) {
+        continue
+      }
+      const worldX = Math.round(camX + drawX)
+      const worldY = Math.round(camY + cloud.screenYOffset)
+      if (cloud.screenYOffset > bandLimit) {
+        continue
+      }
+      items.push({
+        footY: worldY + h,
+        layer: DRAW_LAYER_CLOUD,
+        draw: () => ctx.drawImage(cloudImg, worldX, worldY),
+      })
+    }
+  }
+
+  items.push({
+    footY: dino.footY,
+    layer: DRAW_LAYER_ACTOR,
+    draw: () => {
+      drawDinoShadow(ctx, dino)
+      drawDino(ctx, img, dino)
+    },
+  })
+
+  if (ptero?.active) {
+    const { h: pteroH } = ATLAS.pterodactyl
+    items.push({
+      footY: ptero.y + pteroH,
+      layer: DRAW_LAYER_ACTOR,
+      draw: () => drawPterodactyl(ctx, img, ptero),
+    })
+  }
+
+  items.sort(compareDrawOrder)
   for (const item of items) {
     item.draw()
   }

@@ -45,17 +45,19 @@ export default function SectionFrame({ section, dialogRef, onClose }) {
   return (
     <dialog
       ref={dialogRef}
-      className="section-dialog font-body text-night-ink"
+      className="section-dialog font-body"
       onClose={onClose}
     >
-      <ExitButton
-        onPress={() => {
-          dialogRef.current?.close()
-        }}
-      />
-      <div className="section-dialog-body overflow-y-auto px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl pt-[calc(3.5rem+env(safe-area-inset-top,0px))]">
-          {Content ? <Content /> : null}
+      <div className="section-dialog-panel">
+        <ExitButton
+          onPress={() => {
+            dialogRef.current?.close()
+          }}
+        />
+        <div className="section-dialog-body overflow-y-auto px-4 pb-10 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-7xl pt-[calc(3.5rem+env(safe-area-inset-top,0px))]">
+            {Content ? <Content /> : null}
+          </div>
         </div>
       </div>
     </dialog>
