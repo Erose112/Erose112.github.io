@@ -24,6 +24,23 @@ export const BLINK_FRAME_MS = 1000 / 3
 export const BLINK_DELAY_MIN_MS = 3000
 export const BLINK_DELAY_MAX_MS = 7000
 
+export const MOVE_SPEED = 180
+export const RUN_FRAME_MS = 1000 / 12
+
+export const FOOTPRINT_W = 28
+export const FOOTPRINT_H = 12
+
+export const JUMP_INITIAL_VELOCITY = 10
+export const JUMP_GRAVITY = 0.6
+export const JUMP_MIN_HEIGHT = 30
+export const JUMP_DROP_VELOCITY = 5
+export const JUMP_Z_CLAMP = 100
+export const JUMP_PEAK_REF = 90
+
+export const INK_COLOR = '#535353'
+export const SHADOW_W = 30
+export const SHADOW_H = 8
+
 export const SPRITE_SHEET_URL = '/sprites/100-offline-sprite.png'
 
 export function cameraAnchor(visibleHeight) {

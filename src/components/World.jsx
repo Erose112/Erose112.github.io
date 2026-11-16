@@ -15,6 +15,9 @@ export default function World() {
 
     const game = new Game(canvas)
     gameRef.current = game
+    if (import.meta.env.DEV) {
+      canvas.__portfolioGame = game
+    }
 
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0]

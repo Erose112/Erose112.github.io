@@ -60,6 +60,32 @@
 - `ExitButton` preview can move into `SectionFrame` or become the real dialog control in milestone 5.
 - Dino `footX` / `footY` at spawn; draw uses foot-centered 44×47 sprite (milestone 3 movement should treat `y` as foot position).
 
+## Milestone 3 — Move and jump (completed)
+
+### Built
+- `src/game/input.js` — `GameInput`: WASD / arrow `event.code` keys (no repeat), normalized diagonals, Space jump edge + held state, `inputLocked` gating, `preventDefault` on movement/jump only while the loop is active (`world` or `transition`), `blur` and `visibilitychange` clear held keys.
+- `src/game/constants.js` — `MOVE_SPEED` (180), jump physics constants (`JUMP_*`), footprint size, shadow size, `INK_COLOR` for shadow fill.
+- `src/game/entities.js` — footprint clamp to walk bounds, `updateDinoMoveAndJump`, run cycle (`RUN_FRAME_MS`), idle blink when stationary, airborne stand frame, `drawDinoShadow` (ink oval under feet).
+- `src/game/Game.js` — input wired into `tick`, per-frame camera from anchor formula, `loopMode` (`world` | `transition` | `section` | `plain`) with pause only for `section`, `plain`, and hidden tab; `setInputLocked()`; loop keeps stepping for `transition`.
+- `src/components/World.jsx` — in dev, `canvas.__portfolioGame` for manual `setLoopMode` checks.
+
+### Deviations
+- **Dev game handle:** `canvas.__portfolioGame` only when `import.meta.env.DEV` (for verifying transition vs section pause without milestone 5 UI).
+- **Float jump crest:** Per-frame float integration peaks at **~88.4** game px on a full hold (within plan’s 88–94 band). Slightly under Chromium’s ~90 due to no rounded y stepping.
+- **Early-release trim:** Physics match plan pseudocode (`vz = 5` after `z >= 30`). Releasing Space the same frame `reachedMin` becomes true trims more than ~10 px in this float model; a slightly longer tap still reads as “lower than hold” in the browser.
+
+### Constants worth tuning
+- `src/game/constants.js` — `MOVE_SPEED`, `JUMP_INITIAL_VELOCITY`, `JUMP_GRAVITY`, `JUMP_DROP_VELOCITY`, `HEADROOM` / `cameraAnchor()`.
+- `src/game/entities.js` — `moveSpeed > 0.5` run vs idle threshold; shadow `SHADOW_W` / `SHADOW_H` and scale via `JUMP_PEAK_REF`.
+- `src/game/constants.js` — walk clamp via `FOOTPRINT_W` / `FOOTPRINT_H` and `WALK_*` / `GROUND_*`.
+
+### For milestone 4+
+- Portals/collision: `clampFootprint` is world bounds only; replace or extend with post/flank resolution in `collision.js` (cactus crops already in `atlas.js`).
+- `Game.setInputLocked()` / `inputLocked` on `GameInput` are ready for enter-hop and wipes in milestone 5.
+- `loopMode === 'transition'` already keeps the rAF loop running; React mode shell will call `setLoopMode` from `App.jsx`.
+- Touch / joystick lives in `input.js` extension or parallel module (milestone 6); jump edge hook should accept pointer `pointerdown` on the jump button.
+- No cactus draw or y-sort yet; dino draws after clouds with shadow under sprite only.
+
 ### Milestone 2 follow-up (visibility fixes)
 - **`Game.start()`** called removed `_onResize()` — loop/resize could fail silently in dev.
 - **Clouds** were only in world y&lt;150; spawn camera looks at y≈600+, so clouds never entered the view. `layoutCloudsForView()` places them in the top of the current viewport (sky band still used when the camera shows it).

@@ -10,13 +10,16 @@ import {
   createDino,
   drawClouds,
   drawDino,
+  drawDinoShadow,
   drawHorizonTiles,
   drawSky,
   drawWorldMargins,
   layoutCloudsForView,
   updateClouds,
-  updateDinoIdle,
+  updateDinoAnimation,
+  updateDinoMoveAndJump,
 } from './entities.js'
+import { GameInput } from './input.js'
 import { applyCanvasScale } from './scale.js'
 
 const MAX_DT = 0.05
@@ -58,9 +61,35 @@ export class Game {
     this.pixelBox = null
     this.scaleS = 1
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    /** @type {'world' | 'transition' | 'section' | 'plain'} */
+    this.loopMode = 'world'
+    this.inputLocked = false
+    this.input = null
 
     this._onFrame = this._onFrame.bind(this)
     this._onVisibility = this._onVisibility.bind(this)
+  }
+
+  /** @param {'world' | 'transition' | 'section' | 'plain'} mode */
+  setLoopMode(mode) {
+    this.loopMode = mode
+    this._syncPauseFromMode()
+  }
+
+  setInputLocked(locked) {
+    this.inputLocked = locked
+    this.input?.setInputLocked(locked)
+  }
+
+  _isLoopActive() {
+    if (document.hidden) {
+      return false
+    }
+    return this.loopMode === 'world' || this.loopMode === 'transition'
+  }
+
+  _syncPauseFromMode() {
+    this.paused = !this._isLoopActive()
   }
 
   async start() {
@@ -69,6 +98,8 @@ export class Game {
       return
     }
     document.addEventListener('visibilitychange', this._onVisibility)
+    this.input = new GameInput()
+    this.input.attach(() => this._isLoopActive())
     this.resize(
       null,
       this.canvas.clientWidth || window.innerWidth,
@@ -130,12 +161,30 @@ export class Game {
     drawSky(ctx, this.camX, this.camY, this.viewW, this.viewH)
     drawHorizonTiles(ctx, this.sprite, this.camX, this.camY, this.viewW, this.viewH)
     drawClouds(ctx, this.sprite, this.clouds)
+    drawDinoShadow(ctx, this.dino)
     drawDino(ctx, this.sprite, this.dino)
+  }
+
+  updateCamera() {
+    const anchor = cameraAnchor(this.viewH)
+    const footScreenY = anchor * this.viewH
+    const targetX = this.dino.footX - this.viewW / 2
+    const targetY = this.dino.footY - footScreenY
+    const cam = clampCamera(targetX, targetY, this.viewW, this.viewH)
+    this.camX = cam.x
+    this.camY = cam.y
   }
 
   tick(dt) {
     const now = performance.now()
-    updateDinoIdle(this.dino, now)
+    const axis = this.input?.getAxis() ?? { x: 0, y: 0 }
+    const jumpEdge = this.input?.consumeJumpEdge() ?? false
+    const jumpHeld = this.input?.isJumpHeld() ?? false
+
+    updateDinoMoveAndJump(this.dino, axis, dt, jumpEdge, jumpHeld)
+    updateDinoAnimation(this.dino, now, dt)
+    this.updateCamera()
+
     if (!this.reduceMotion) {
       updateClouds(this.clouds, dt, this.camX, this.viewW)
     }
@@ -160,7 +209,8 @@ export class Game {
   }
 
   _onVisibility() {
-    this.paused = document.hidden
+    this._syncPauseFromMode()
+    this.input?.clearAll()
     if (!document.hidden) {
       this.lastTime = performance.now()
     }
@@ -169,6 +219,8 @@ export class Game {
   destroy() {
     this.disposed = true
     this.running = false
+    this.input?.destroy()
+    this.input = null
     if (this.rafId) {
       cancelAnimationFrame(this.rafId)
       this.rafId = 0

@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: move-jump
     content: Add the rAF loop, input lock, normalized movement, headroom camera anchor, run cycle, and a ~90px fake-z jump
-    status: pending
+    status: completed
   - id: portals
     content: Add three cactus gates with base-footprint colliders, canvas y-sorting, DOM labels above the canvas, and jump-to-enter
     status: pending
