@@ -4,7 +4,7 @@ overview: Replace the single-page React portfolio with a Canvas 2D desert you wa
 todos:
   - id: content-theme
     content: Extract content.js, add Tailwind v4 theme and self-hosted fonts, fix the Qflow image path, render the plain page, and add noscript links
-    status: pending
+    status: completed
   - id: static-world
     content: Transcribe the 1x sprite atlas and draw the desert with integer scale S, crisp at dpr 1.25 and 1.5
     status: pending

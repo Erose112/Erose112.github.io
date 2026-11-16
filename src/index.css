@@ -1,4 +1,57 @@
 @import "tailwindcss";
+@import "@fontsource/press-start-2p/400.css";
+@import "@fontsource/vt323/400.css";
+
+@theme {
+  --color-desert: #f7f7f7;
+  --color-ink: #535353;
+  --color-night: #080808;
+  --color-night-ink: #acacac;
+  --font-display: "Press Start 2P", ui-monospace, monospace;
+  --font-body: "VT323", ui-monospace, monospace;
+  --radius-none: 0px;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-desert);
+  color: var(--color-ink);
+  overflow: hidden;
+  font-family: var(--font-body);
+}
+
+#root {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  -webkit-font-smoothing: none;
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.pixelated {
+  image-rendering: pixelated;
+}
+
+dialog.section-dialog {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  background-color: var(--color-night);
+  color: var(--color-night-ink);
+}
+
+dialog.section-dialog::backdrop {
+  background-color: var(--color-night);
+}
 
 @keyframes logo-marquee {
   from {
