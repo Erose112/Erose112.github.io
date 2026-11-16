@@ -173,3 +173,25 @@
 - Lazy-load section/marquee images; preload sheet is already in `index.html` (milestone 2) — milestone 7 may tighten “early” request + footer BSD credit on plain page.
 - `ExitButton` spin still off until frame-0 crop verified.
 - Night logo tiles on section dialogs still use plain-page grayscale styling (carried from milestone 5).
+
+## Milestone 7 — Load and credit (completed)
+
+### Built
+- `index.html` — unchanged `<link rel="preload" as="image">` for `/sprites/100-offline-sprite.png` (milestone 2); `Game.start()` still awaits `sprite.decode()` before the rAF loop.
+- `src/components/ProjectsSection.jsx` — lazy/async decoding on project screenshots.
+- `src/content.js` — `chromiumAttribution` strings for the plain-page footer.
+- `src/components/PlainPage.jsx` — footer with BSD credit link.
+- `THIRD_PARTY_NOTICES.md` — extended Chromium section with asset table and preload note.
+- `README.md` — project blurb + pointer to `THIRD_PARTY_NOTICES.md`.
+
+### Deviations
+- **`LogoMarquee` left out** — PLAN §6 expects it, but it was already missing from the tree; this milestone does not restore it. Lazy-loading covers project screenshots only.
+- **BSD footer on plain page only** — section dialogs do not repeat the credit; acceptance calls out plain page + notices file.
+
+### Constants worth tuning
+- `src/content.js` — `chromiumAttribution` copy if legal wants different wording.
+- `index.html` — preload `href` must stay aligned with `SPRITE_SHEET_URL` in `src/game/constants.js`.
+
+### For optional milestones+
+- `ExitButton` spin, audio, night toggle, pterodactyl remain optional per PLAN §9.
+- Night logo tiles on section dialogs still use plain-page grayscale marquee styling.

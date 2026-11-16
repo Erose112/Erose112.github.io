@@ -38,6 +38,8 @@ export default function ProjectsSection() {
               <img
                 src={project.imageSrc}
                 alt={project.imageAlt}
+                loading="lazy"
+                decoding="async"
                 className="mt-3 w-full aspect-video object-cover border-2 border-ink"
                 style={{ objectPosition: project.imageObjectPosition }}
               />

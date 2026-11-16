@@ -1,3 +1,4 @@
+import { chromiumAttribution } from '../content.js'
 import AboutSection from './AboutSection.jsx'
 import ExperienceSection from './ExperienceSection.jsx'
 import ProjectsSection from './ProjectsSection.jsx'
@@ -19,6 +20,21 @@ export default function PlainPage({ onPlayGame }) {
         <AboutSection />
         <ExperienceSection />
         <ProjectsSection />
+
+        <footer className="mt-12 border-t-2 border-ink pt-6 font-body text-2xl leading-[1.35]">
+          <p>
+            {chromiumAttribution.plainFooter}{' '}
+            <a
+              href={chromiumAttribution.licenseHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:bg-ink hover:text-desert"
+            >
+              {chromiumAttribution.licenseLabel}
+            </a>
+            .
+          </p>
+        </footer>
       </div>
     </main>
   )

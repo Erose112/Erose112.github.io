@@ -1,19 +1,12 @@
-# React + Vite
+# Ethan Rose — portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A React 19 + Vite personal site: a walkable Chrome offline dinosaur desert with portals into About, Experience, and Projects content. Skip **SKIP GAME** (or open `#plain`) for a scrollable plain page with the same copy.
 
-Currently, two official plugins are available:
+Sprites and reference game code from Chromium are credited in the plain-page footer and in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Scripts
 
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `npm run dev` — local development
+- `npm run build` — production build
+- `npm run lint` — ESLint
+- `npm run preview` — preview the production build

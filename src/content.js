@@ -1,5 +1,13 @@
 // Verbatim copy from the original App.jsx — do not copy-edit.
 
+export const chromiumAttribution = {
+  plainFooter:
+    'Desert game sprites, optional sound effects, and reference excerpts from the Chrome offline dinosaur game (Copyright The Chromium Authors).',
+  licenseLabel: 'Chromium BSD-style license',
+  licenseHref:
+    'https://chromium.googlesource.com/chromium/src/+/main/LICENSE',
+}
+
 export const companyLogos = [
   { src: '/memotext-logo.png', alt: 'MEMOTEXT' },
   { src: '/queens-logo.png', alt: "Queen's University" },

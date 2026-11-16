@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: credit-perf
     content: Preload the 1x sheet, lazy-load section images, and extend the BSD attribution
-    status: pending
+    status: completed
 isProject: false
 ---
 
