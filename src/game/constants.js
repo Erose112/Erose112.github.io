@@ -1,0 +1,36 @@
+export const WORLD_WIDTH = 1600
+export const WORLD_HEIGHT = 960
+export const SKY_BOTTOM = 150
+export const GROUND_TOP = 180
+export const GROUND_BOTTOM = 920
+export const WALK_LEFT = 24
+export const WALK_RIGHT = 1576
+
+export const DESERT_COLOR = '#f7f7f7'
+
+export const SPAWN = { x: 800, y: 760, facingRight: true }
+
+export const HEADROOM = 147
+/** PLAN cites 56px; use strip height (12) so ground reads continuous in the camera window. */
+export const HORIZON_TILE_STEP_Y = 12
+
+/** Horizon strip: try 52 if 54 clips bumps (see PLAN §5). */
+export const HORIZON_SOURCE_Y = 52
+
+export const CLOUD_COUNT = 4
+export const CLOUD_DRIFT_PX_PER_SEC = 30
+
+export const BLINK_FRAME_MS = 1000 / 3
+export const BLINK_DELAY_MIN_MS = 3000
+export const BLINK_DELAY_MAX_MS = 7000
+
+export const SPRITE_SHEET_URL = '/sprites/100-offline-sprite.png'
+
+export function cameraAnchor(visibleHeight) {
+  return Math.max(0.5, Math.min(0.85, HEADROOM / visibleHeight))
+}
+
+export function computeScale(dpr, innerWidth, innerHeight) {
+  const fromViewport = Math.round(Math.min(innerWidth, innerHeight) * dpr / 220)
+  return Math.max(Math.round(2 * dpr), fromViewport)
+}

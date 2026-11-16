@@ -1,5 +1,5 @@
-import PlainPage from './components/PlainPage.jsx'
+import World from './components/World.jsx'
 
 export default function App() {
-  return <PlainPage />
+  return <World />
 }

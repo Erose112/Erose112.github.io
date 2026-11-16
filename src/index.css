@@ -25,6 +25,10 @@ body {
   overflow: hidden;
 }
 
+.world-canvas {
+  image-rendering: pixelated;
+}
+
 .font-display {
   font-family: var(--font-display);
   -webkit-font-smoothing: none;

@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: static-world
     content: Transcribe the 1x sprite atlas and draw the desert with integer scale S, crisp at dpr 1.25 and 1.5
-    status: pending
+    status: completed
   - id: move-jump
     content: Add the rAF loop, input lock, normalized movement, headroom camera anchor, run cycle, and a ~90px fake-z jump
     status: pending

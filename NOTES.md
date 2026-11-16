@@ -28,3 +28,40 @@
 - `body { overflow: hidden }` is global; `.plain-page` uses `overflow-y: auto` — game world will need its own full-viewport layer.
 - Logo marquee images use **grayscale** + hover/focus color; night-section logo tiles (`#f7f7f7` + 2px border) are not applied on the day plain page yet (per plan, sections use night palette later).
 - No sprite preload in `index.html` until milestone 2.
+
+## Milestone 2 — Static world (completed)
+
+### Built
+- `src/game/atlas.js` — 1× ldpi sprite rects (T-Rex, cloud, horizon, cacti, restart, pterodactyl) from the plan / Chromium reference.
+- `src/game/constants.js` — world size, sky/ground bands, spawn `(800, 760)`, blink timing, scale helper, sprite URL.
+- `src/game/scale.js` — integer `S`, backing-store sizing with `ResizeObserver` `devicePixelContentBoxSize` when available, `restartSpriteMultiple()` for exit crop sizing.
+- `src/game/entities.js` — idle dino blink, four clouds, sky fill, horizon tiling, draw order helpers.
+- `src/game/Game.js` — preload + `decode()`, rAF loop (blink + cloud drift), visibility pause, StrictMode-safe `destroy()`, camera with headroom anchor formula (for later jump room).
+- `src/components/World.jsx` — full-viewport canvas + resize observer.
+- `src/components/ExitButton.jsx` — off-loop restart crop drawn at **36N × 32N** device pixels (top center preview until milestone 5 dialog).
+- `src/App.jsx` renders `World` (not `PlainPage`) for this shippable slice.
+- `index.html` — `<link rel="preload">` for `/sprites/100-offline-sprite.png`.
+- `src/index.css` — `.world-canvas { image-rendering: pixelated }`.
+
+### Deviations
+- **Horizon source Y:** `atlas.js` / `HORIZON_SOURCE_Y` use **52** (`horizon_line.ts` config) instead of **54** (`offline_sprite_definitions.ts`). Plan §5 says to prefer 52 if 54 clips bumps; confirm visually and flip the constant if bumps look wrong.
+- **Exit button on screen:** Shown at top center (non-interactive, `pointer-events-none`) so acceptance can verify the circular-arrow crop and device-pixel box before milestone 5 hides it in the dialog.
+- **`PlainPage` not mounted:** Milestone 2 acceptance is the desert only; `#plain` / skip return in milestone 6.
+
+### Constants worth tuning
+- `src/game/constants.js` — `HORIZON_SOURCE_Y` (52 vs 54), `HORIZON_TILE_STEP_Y` (56), cloud spawn band, `computeScale()` divisor **220**.
+- `src/game/constants.js` — blink delays `BLINK_DELAY_MIN_MS` / `BLINK_DELAY_MAX_MS` (3000–7000 per plan).
+- `src/game/scale.js` — `restartSpriteMultiple()` uses `max(2, round(2 * dpr))`.
+
+### For milestone 3+
+- Re-mount `PlainPage` behind mode shell when `App.jsx` gains `syncFromLocation()` (milestone 5–6).
+- `Game` already pauses on `document.hidden`; add input (`src/game/input.js`), movement, jump `z`, shadow, and run frames — reuse `TREX_FRAME_OFFSET` and stored `scaleS` / camera anchor.
+- Portals/cacti crops are in `atlas.js` but not drawn until milestone 4.
+- `ExitButton` preview can move into `SectionFrame` or become the real dialog control in milestone 5.
+- Dino `footX` / `footY` at spawn; draw uses foot-centered 44×47 sprite (milestone 3 movement should treat `y` as foot position).
+
+### Milestone 2 follow-up (visibility fixes)
+- **`Game.start()`** called removed `_onResize()` — loop/resize could fail silently in dev.
+- **Clouds** were only in world y&lt;150; spawn camera looks at y≈600+, so clouds never entered the view. `layoutCloudsForView()` places them in the top of the current viewport (sky band still used when the camera shows it).
+- **Ground** looked like 3 stripes because tiles were 56px apart; `HORIZON_TILE_STEP_Y` is **12** (strip height) until we revisit PLAN §5 spacing.
+- **Exit preview** uses `z-20`, `img.decode()`, and the game canvas is `z-0` so the restart crop sits above the desert.
