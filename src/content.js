@@ -7,16 +7,20 @@ export const chromiumAttribution = {
   licenseHref: 'https://chromium.googlesource.com/chromium/src/+/main/LICENSE',
 }
 
+const SITE_ORIGIN = 'https://erose112.github.io/portfolio-website'
+
 export const seo = {
   title: 'Ethan Rose — Software Developer',
   description:
-    'Third-year Computer Science and Math student at Queen’s University building full-stack web apps and developer tools. Looking for software development internships starting May 2027.',
-  ogImage: 'og-image.png',
+    'Third-year Computing student at Queen’s University building full-stack web apps and developer tools. Seeking a 12–16 month software development co-op starting May 2027.',
+  siteUrl: `${SITE_ORIGIN}/`,
+  ogImage: `${SITE_ORIGIN}/og-image.png`,
 }
 
 export const site = {
   name: 'Ethan Rose',
-  intro: 'I’m a third-year Computer Science and Math student at Queen’s University. I’m looking for software development internships starting May 2027.',
+  intro:
+    'I’m a third-year Computing student at Queen’s University. I’m seeking a 12–16 month software development co-op starting May 2027.',
   aboutLabel: 'About',
   aboutItems: [
     'I like building software that real people use, and finding interesting problems that sit at the intersection of systems building and applied math.',
@@ -47,7 +51,7 @@ export const educationSection = {
   title: 'Education:',
   items: [
     {
-      title: 'Queen’s University — Computer Science and Math',
+      title: 'Queen’s University — Computing',
       meta: 'Kingston, ON · Computing, Mathematics, and Analytics · Expected graduation 2029',
       description:
         'Dean’s Honour List (2024–2025, 2025–2026). Relevant coursework: Software Architecture, Operating Systems, Data Structures, Computer Architecture, Applied Methods in Statistics.',
