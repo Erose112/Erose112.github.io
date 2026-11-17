@@ -8,7 +8,9 @@ import {
 import { frameDelta } from '../clock.js'
 import { resolveBufferSize } from '../scale.js'
 import { createRng, randInt } from '../rng.js'
-import { readHiScore } from './storage.js'
+import { readHiScore, writeHiScore } from './storage.js'
+import { createSpawner, maybeSpawnRows } from './spawner.js'
+import { stepRunnerMotion } from './simulate.js'
 import {
   CLOUD_FREQ,
   CLOUD_GAP_MAX,
@@ -37,6 +39,12 @@ import {
   TEXT_SPRITE_X,
   TRACK_BOTTOM,
   TRACK_TOP,
+  TREX_CRASH_OFFSET,
+  GAME_OVER_SRC,
+  GAME_OVER_Y_FRAC,
+  GAMEOVER_CLEAR_MS,
+  CACTUS_SMALL,
+  CACTUS_LARGE,
 } from './constants.js'
 import {
   createRunScoring,
@@ -121,6 +129,7 @@ export class RunnerGame {
    *   input: import('../input.js').GameInput | null,
    *   cloudSprite: HTMLCanvasElement | null,
    *   reduceMotion: boolean,
+   *   onGameOver?: () => void,
    * }} deps
    */
   constructor(canvas, deps) {
@@ -129,6 +138,7 @@ export class RunnerGame {
     this.input = deps.input
     this.cloudSprite = deps.cloudSprite
     this.reduceMotion = deps.reduceMotion
+    this.onGameOver = deps.onGameOver
     this.disposed = false
     this.rafId = 0
     this.running = false
@@ -145,8 +155,13 @@ export class RunnerGame {
     this.horizonX = 0
     this.footY = (FOOT_Y_MIN + FOOT_Y_MAX) / 2
     this.runningTime = 0
-    /** @type {'ready' | 'playing' | 'paused'} */
+    /** @type {'ready' | 'playing' | 'paused' | 'over'} */
     this.phase = 'ready'
+    /** @type {import('./spawner.js').RunnerRow[]} */
+    this.rows = []
+    this.spawner = null
+    this.crashAtMs = 0
+    this._runSeed = Date.now()
     this.scoring = createRunScoring()
     this.hiScore = readHiScore()
     this.clouds = createRunnerClouds()
@@ -170,7 +185,7 @@ export class RunnerGame {
   }
 
   wantsKeyboardCapture() {
-    return !this.disposed && this.running
+    return !this.disposed && this.running && this.phase !== 'paused'
   }
 
   enterReady() {
@@ -189,6 +204,15 @@ export class RunnerGame {
       c.active = false
     }
     this.seedInitialClouds()
+    this.resetSpawner()
+    this.rows = []
+    this.crashAtMs = 0
+  }
+
+  resetSpawner() {
+    this._runSeed = Date.now()
+    this.spawner = createSpawner(this._runSeed)
+    this.spawner.spawnCursor = this.cameraX + this.visibleW
   }
 
   seedInitialClouds() {
@@ -256,6 +280,76 @@ export class RunnerGame {
 
   _integrateMotion() {
     return this.phase === 'playing'
+  }
+
+  /** @returns {import('./spawner.js').RunnerRow[]} */
+  _activeCollisionFootprints() {
+    const dinoWorldX = this.cameraX + this.dinoX
+    const margin = 80
+    const minX = dinoWorldX - margin
+    const maxX = dinoWorldX + margin
+    /** @type {{ footX: number, footY: number, w: number, h: number }[]} */
+    const out = []
+    for (const row of this.rows) {
+      const left = row.worldX
+      const right = row.worldX + row.rowWidth
+      if (right < minX || left > maxX) {
+        continue
+      }
+      const footX = row.worldX + row.rowWidth / 2
+      for (const fp of row.footprints) {
+        out.push({ footX, footY: fp.footY, w: fp.w, h: fp.h })
+      }
+    }
+    return out
+  }
+
+  crash() {
+    if (this.phase !== 'playing') {
+      return
+    }
+    this.phase = 'over'
+    this.crashAtMs = performance.now()
+    this.dino.frameOffset = TREX_CRASH_OFFSET
+    this.input?.clearAll()
+    if (this.scoring.score > this.hiScore) {
+      this.hiScore = writeHiScore(this.scoring.score)
+    }
+    this.onGameOver?.()
+  }
+
+  restartAfterCrash() {
+    if (this.phase !== 'over') {
+      return
+    }
+    this.scoring = createRunScoring()
+    this.cameraX = 0
+    this.horizonX = 0
+    this.runningTime = 0
+    this.footY = (FOOT_Y_MIN + FOOT_Y_MAX) / 2
+    this.rows = []
+    this.resetSpawner()
+    this.crashAtMs = 0
+    this.phase = 'playing'
+    this.dino.frameOffset = TREX_FRAME_OFFSET.run1
+    this.dino.runFrameIndex = 0
+    this.canvas.focus({ preventScroll: true })
+  }
+
+  _handleOverInput() {
+    if (this.phase !== 'over') {
+      return
+    }
+    const now = performance.now()
+    if (this.input?.consumeEnterEdge()) {
+      this.restartAfterCrash()
+      return
+    }
+    if (this.input?.consumeJumpEdge()) {
+      if (now - this.crashAtMs >= GAMEOVER_CLEAR_MS) {
+        this.restartAfterCrash()
+      }
+    }
   }
 
   _onBlur() {
@@ -327,6 +421,8 @@ export class RunnerGame {
       if (this.input?.consumeJumpEdge()) {
         this.beginPlay()
       }
+    } else if (this.phase === 'over') {
+      this._handleOverInput()
     } else if (this.phase === 'paused' && this._pauseFromResize) {
       if (this.input?.consumeJumpEdge()) {
         this.resumeFromPause()
@@ -349,21 +445,46 @@ export class RunnerGame {
     stepRunScoring(this.scoring, dt, integrate)
     updateScoreFlash(this.scoring, now)
 
-    if (integrate) {
-      const frames = dt * 60
-      const scroll = this.scoring.speed * frames
-      this.cameraX += scroll
-      this.horizonX = (this.horizonX + scroll) % HORIZON_TILE_W
-      this.updateClouds(dt, this.scoring.speed)
-    }
-
     const axis = this.input?.getAxis() ?? { x: 0, y: 0 }
     if (integrate) {
-      this.footY += axis.y * LANE_SPEED * dt
-      this.footY = Math.max(FOOT_Y_MIN, Math.min(FOOT_Y_MAX, this.footY))
+      const newSpawned = maybeSpawnRows(this.spawner, {
+        runningTimeMs: this.runningTime,
+        cameraX: this.cameraX,
+        visibleW: this.visibleW,
+        score: this.scoring.score,
+        speed: this.scoring.speed,
+      })
+      if (newSpawned.length > 0) {
+        this.rows.push(...newSpawned)
+      }
+
+      const motion = stepRunnerMotion({
+        cameraX: this.cameraX,
+        dinoX: this.dinoX,
+        footY: this.footY,
+        axisY: axis.y,
+        speed: this.scoring.speed,
+        dt,
+        obstacles: this._activeCollisionFootprints(),
+      })
+      if (motion.hit) {
+        this.crash()
+        return
+      }
+
+      const scroll = motion.cameraX - this.cameraX
+      this.cameraX = motion.cameraX
+      this.footY = motion.footY
+      this.horizonX = (this.horizonX + scroll) % HORIZON_TILE_W
+      this.updateClouds(dt, this.scoring.speed)
+
+      const cullBefore = this.cameraX - 120
+      this.rows = this.rows.filter((row) => row.worldX + row.rowWidth >= cullBefore)
     }
 
-    this.updateDinoAnim(now, dt, integrate ? this.scoring.speed : 0)
+    if (this.phase !== 'over') {
+      this.updateDinoAnim(now, dt, integrate ? this.scoring.speed : 0)
+    }
   }
 
   /** @param {number} dt @param {number} speed */
@@ -407,6 +528,10 @@ export class RunnerGame {
   /** @param {number} now @param {number} dt @param {number} speed */
   updateDinoAnim(now, dt, speed) {
     const dino = this.dino
+    if (this.phase === 'over') {
+      dino.frameOffset = TREX_CRASH_OFFSET
+      return
+    }
     const runningAnim = this.phase === 'playing' && speed > 0
 
     if (runningAnim) {
@@ -476,12 +601,71 @@ export class RunnerGame {
     ctx.fillStyle = DESERT_COLOR
     ctx.fillRect(0, TRACK_TOP, w, TRACK_BOTTOM - TRACK_TOP)
 
-    this.drawDino(ctx)
+    this.drawRowsAndDino(ctx)
 
     const showScore = scoreDrawVisible(this.scoring, performance.now())
-    drawScoreHud(ctx, this.sprite, this.scoring.score, this.hiScore, w, showScore)
+    const showCurrent = this.phase !== 'over' ? showScore : true
+    drawScoreHud(ctx, this.sprite, this.scoring.score, this.hiScore, w, showCurrent)
+
+    if (this.phase === 'over') {
+      const { x, y, w: gw, h: gh } = GAME_OVER_SRC
+      const destX = Math.round((w - gw) / 2)
+      ctx.drawImage(this.sprite, x, y, gw, gh, destX, GAME_OVER_Y_FRAC, gw, gh)
+    }
 
     ctx.restore()
+  }
+
+  drawRowsAndDino(ctx) {
+    /** @type {{ footY: number, draw: () => void }[]} */
+    const layer = []
+    layer.push({
+      footY: this.footY,
+      draw: () => this.drawDino(ctx),
+    })
+    for (const row of this.rows) {
+      const screenLeft = row.worldX - this.cameraX
+      if (screenLeft > this.visibleW + row.rowWidth || screenLeft + row.rowWidth < -row.rowWidth) {
+        continue
+      }
+      for (const fp of row.footprints) {
+        layer.push({
+          footY: fp.footY,
+          draw: () => this.drawRowFootprint(ctx, row, screenLeft, fp),
+        })
+      }
+    }
+    layer.sort((a, b) => a.footY - b.footY)
+    for (const item of layer) {
+      item.draw()
+    }
+  }
+
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {import('./spawner.js').RunnerRow} row
+   * @param {number} screenLeft
+   * @param {{ footY: number }} fp
+   */
+  drawRowFootprint(ctx, row, screenLeft, fp) {
+    const cfg = row.type === 'large' ? CACTUS_LARGE : CACTUS_SMALL
+    const atlas = row.type === 'large' ? ATLAS.cactusLarge : ATLAS.cactusSmall
+    const size = row.clusterSize
+    const destW = atlas.w * size
+    const sourceX = atlas.x + atlas.w * size * (size - 1) / 2
+    const destX = Math.round(screenLeft)
+    const destY = Math.round(fp.footY - cfg.spriteH)
+    ctx.drawImage(
+      this.sprite,
+      sourceX,
+      atlas.y,
+      destW,
+      atlas.h,
+      destX,
+      destY,
+      destW,
+      atlas.h,
+    )
   }
 
   /** @param {CanvasRenderingContext2D} ctx @param {number} w */

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { CUE_BLINK_MS, WELCOME_BLINK_MS, WELCOME_DISMISS_MS } from '../game/constants.js'
-import { formatHiLabel, readHiScore } from '../game/runner/storage.js'
 import { Game } from '../game/Game.js'
 import Hud from './Hud.jsx'
 import RunnerOverlay from './RunnerOverlay.jsx'
@@ -68,10 +67,10 @@ export default function World({
   const [welcomeAnchor, setWelcomeAnchor] = useState(
     /** @type {{ x: number, y: number } | null} */ (null),
   )
-  const [dinoHiLine, setDinoHiLine] = useState(() => formatHiLabel(readHiScore()))
   const [runnerPhase, setRunnerPhase] = useState(
-    /** @type {'ready' | 'playing' | 'paused'} */ ('ready'),
+    /** @type {'ready' | 'playing' | 'paused' | 'over'} */ ('ready'),
   )
+  const runnerRestartRef = useRef(/** @type {HTMLButtonElement | null} */ (null))
 
   const onGameReadyRef = useRef(onGameReady)
   const onPortalEnterRef = useRef(onPortalEnter)
@@ -154,6 +153,11 @@ export default function World({
     if (import.meta.env.DEV) {
       canvas.__portfolioGame = game
     }
+    game.onRunnerGameOver = () => {
+      requestAnimationFrame(() => {
+        runnerRestartRef.current?.focus({ preventScroll: true })
+      })
+    }
     onGameReadyRef.current(game)
 
     const ro = new ResizeObserver((entries) => {
@@ -232,10 +236,16 @@ export default function World({
   }, [mode])
 
   useEffect(() => {
-    if (mode === 'world') {
-      setDinoHiLine(formatHiLabel(readHiScore()))
+    if (mode === 'runner' && runnerPhase === 'over') {
+      runnerRestartRef.current?.focus({ preventScroll: true })
     }
-  }, [mode])
+  }, [mode, runnerPhase])
+
+  const handleRunnerRestart = () => {
+    const game = gameRef.current
+    game?.runner?.restartAfterCrash()
+    canvasRef.current?.focus({ preventScroll: true })
+  }
 
   const cueText = (() => {
     if (!proximityId) {
@@ -348,16 +358,15 @@ export default function World({
           className="portal-label portal-label--dino font-display absolute left-0 top-0 text-center text-ink"
         >
           <span className="block whitespace-nowrap">DINO RUN</span>
-          <span className="mt-1 block whitespace-nowrap text-[10px] sm:text-xs">
-            {dinoHiLine}
-          </span>
         </div>
       </div>
       {showRunnerChrome && onRunnerBack ? (
         <RunnerOverlay
           onBack={onRunnerBack}
+          onRestart={handleRunnerRestart}
           coarsePointer={coarsePointer}
           phase={runnerPhase}
+          restartRef={runnerRestartRef}
         />
       ) : null}
       {welcomeOpen && mode === 'world' && welcomeAnchor ? (

@@ -102,6 +102,8 @@ export class Game {
     this.loopMode = 'world'
     /** @type {RunnerGame | null} */
     this.runner = null
+    /** @type {(() => void) | null} */
+    this.onRunnerGameOver = null
     this.inputLocked = false
     this.input = null
     this.activePortal = null
@@ -135,6 +137,7 @@ export class Game {
         input: this.input,
         cloudSprite: this.cloudSprite,
         reduceMotion: this.reduceMotion,
+        onGameOver: () => this.onRunnerGameOver?.(),
       })
     }
     const w = this.canvas.clientWidth || window.innerWidth

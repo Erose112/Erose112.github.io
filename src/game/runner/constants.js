@@ -7,7 +7,7 @@ export const PLAYFIELD_H = 180
 
 export const SKY_BOTTOM = 36
 export const TRACK_TOP = 52
-export const TRACK_BOTTOM = 136
+export const TRACK_BOTTOM = 200
 export const TRACK_DEPTH = TRACK_BOTTOM - TRACK_TOP
 
 export const FOOTPRINT_W = 28
@@ -73,3 +73,38 @@ export function playfieldOffsetY(visibleH) {
   }
   return 0
 }
+
+export const CLEAR_TIME_MS = 3000
+export const GAMEOVER_CLEAR_MS = 1200
+
+export const GAP_COEFFICIENT = 0.6
+export const MAX_GAP_COEFFICIENT = 1.5
+export const MAX_CLUSTER_SIZE = 3
+export const MAX_TYPE_STREAK = 2
+export const MAX_SEAM_PX = 4
+export const MIN_PASS_CORRIDOR_PX = 14
+
+export const CACTUS_SMALL = {
+  id: 'small',
+  spriteW: 17,
+  spriteH: 35,
+  footW: 17,
+  footH: 10,
+  minGap: 120,
+  multipleSpeed: 4,
+}
+
+export const CACTUS_LARGE = {
+  id: 'large',
+  spriteW: 25,
+  spriteH: 50,
+  footW: 25,
+  footH: 12,
+  minGap: 120,
+  multipleSpeed: 7,
+}
+
+export const GAME_OVER_SRC = { x: 655, y: 15, w: 191, h: 11 }
+export const GAME_OVER_Y_FRAC = Math.round((PLAYFIELD_H - 25) / 3)
+
+export const TREX_CRASH_OFFSET = 220

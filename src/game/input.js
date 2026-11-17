@@ -12,9 +12,24 @@ const MOVEMENT_CODES = new Set([
 const PREVENT_CODES = new Set([
   ...MOVEMENT_CODES,
   'Space',
+  'Enter',
 ])
 
 const SQRT2 = Math.SQRT2
+
+/**
+ * @param {EventTarget | null} target
+ */
+function isNativeActivatable(target) {
+  if (!(target instanceof Element)) {
+    return false
+  }
+  const tag = target.tagName
+  if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT') {
+    return true
+  }
+  return target.getAttribute('role') === 'button'
+}
 
 /**
  * Keyboard and on-screen touch input for the desert loop.
@@ -25,6 +40,7 @@ export class GameInput {
     this.inputLocked = false
     this.jumpQueued = false
     this.jumpHeld = false
+    this.enterQueued = false
     this._ignoreJumpUntilRelease = false
     this.touchAxis = { x: 0, y: 0 }
     /** @type {'plane' | 'vertical'} */
@@ -70,6 +86,7 @@ export class GameInput {
     this.held.clear()
     this.jumpQueued = false
     this.jumpHeld = false
+    this.enterQueued = false
     this.touchAxis = { x: 0, y: 0 }
   }
 
@@ -104,10 +121,22 @@ export class GameInput {
     if (e.repeat) {
       return
     }
-    if (this._shouldPrevent() && PREVENT_CODES.has(e.code)) {
+    const yieldToNative =
+      (e.code === 'Space' || e.code === 'Enter') && isNativeActivatable(e.target)
+    const canPrevent = this._shouldPrevent() && PREVENT_CODES.has(e.code) && !yieldToNative
+    if (canPrevent) {
       e.preventDefault()
     }
+    if (e.code === 'Enter') {
+      if (!yieldToNative && !this.inputLocked) {
+        this.enterQueued = true
+      }
+      return
+    }
     if (e.code === 'Space') {
+      if (yieldToNative) {
+        return
+      }
       if (!this.inputLocked && !this._ignoreJumpUntilRelease) {
         this.jumpQueued = true
         this.jumpHeld = true
@@ -115,6 +144,9 @@ export class GameInput {
       return
     }
     if (MOVEMENT_CODES.has(e.code)) {
+      if (isNativeActivatable(e.target)) {
+        return
+      }
       this.held.add(e.code)
     }
   }
@@ -200,6 +232,14 @@ export class GameInput {
       return false
     }
     this.jumpQueued = false
+    return true
+  }
+
+  consumeEnterEdge() {
+    if (this.inputLocked || !this.enterQueued) {
+      return false
+    }
+    this.enterQueued = false
     return true
   }
 

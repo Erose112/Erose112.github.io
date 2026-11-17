@@ -23,3 +23,15 @@ export function formatHiLabel(score) {
   const clamped = Math.max(0, Math.min(99999, Math.floor(score)))
   return `HI ${String(clamped).padStart(5, '0')}`
 }
+
+/** @param {number} score */
+export function writeHiScore(score) {
+  const clamped = Math.max(0, Math.min(99999, Math.floor(score)))
+  try {
+    localStorage.setItem(HI_KEY, String(clamped))
+  } catch {
+    /* keep memory fallback */
+  }
+  memoryHi = clamped
+  return clamped
+}

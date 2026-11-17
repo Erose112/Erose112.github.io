@@ -10,7 +10,7 @@ todos:
     status: completed
   - id: r3-death
     content: "R3: One-corridor cactus rows, sub-stepped collision, crash, game-over panel, and persisted HI score."
-    status: pending
+    status: completed
   - id: r4-tests
     content: "R4: Constant fairness ceiling, shift-ambition ramp, corridor ramp over score 0-1500, and node --test with a bot that waits T_REACT."
     status: pending

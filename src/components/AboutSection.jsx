@@ -20,7 +20,6 @@ export default function AboutSection({ showHeading = true }) {
         {site.intro}
       </p>
 
-      <p className="section-copy mt-2">{site.lookingFor}</p>
 
       <div className="mt-2">
         <p className="section-copy">

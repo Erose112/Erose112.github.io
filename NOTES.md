@@ -290,3 +290,34 @@
 - HI on HUD is read-only via `readHiScore()`; write on crash and refresh gate label on desert return.
 - `phase === 'over'` not used yet; crash frame offset **220**, game-over crop, Restart DOM (R3).
 - Cacti draw uses footprint sort by foot y inside the track band.
+
+## R3 — Rows, death, HI (completed)
+
+### Built
+- `src/game/runner/difficulty.js` — corridor ramp **46→28**, shift ambition **0.25→1**, fairness cap from `gap - 28` at `T_REACT` / fair **0.9**.
+- `src/game/runner/spawner.js` — rows after `CLEAR_TIME_MS` **3000**, Chromium gap formula, one-corridor footprint stacks (`ceil(blocked / footprintDepth)`), cluster size / duplication cap **2**, spawn fill ahead of `cameraX + visibleW`.
+- `src/game/runner/simulate.js` — sub-steps **≤ 1/120 s**, inset dino box **2 px**/side, combined lane + scroll motion per frame.
+- `src/game/runner/RunnerGame.js` — `over` phase, cactus y-sort draw, crash frame **220**, GAME OVER crop, Enter / Space (**1200 ms**) restart, immediate restart from DOM button + fresh run without ready.
+- `src/game/runner/storage.js` — `writeHiScore()` → `ethan-rose.dinoRun.hi`.
+- `src/game/input.js` — `Enter` edge, Space/Enter yield to focused buttons/links.
+- `src/components/RunnerOverlay.jsx` — restart crop button beside **BACK TO WORLD** on game over; focus on crash.
+- `src/components/World.jsx` / `src/game/Game.js` — restart handler, `onRunnerGameOver` focus hook.
+
+### Deviations
+- **R4 tests not added** — per milestone scope; spawner still applies ambition + cap math so R4 can assert seeds without rework.
+- **Cactus draw** — full cluster sprite drawn at each footprint depth (same column x); collision uses per-footprint boxes only.
+- **Gap bump when cap is 0** — if `fairShiftCapPx` is 0, row creation recenters corridor at shift 0 but does not yet widen `pendingGap` in-place (R4 fairness loop can extend `maybeSpawnRows`).
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `CLEAR_TIME_MS`, `GAMEOVER_CLEAR_MS`, `GAP_COEFFICIENT`, `MAX_GAP_COEFFICIENT`, `MAX_CLUSTER_SIZE`, `MAX_TYPE_STREAK`, `MAX_SEAM_PX`, `MIN_PASS_CORRIDOR_PX`, `CACTUS_SMALL` / `CACTUS_LARGE`, `GAME_OVER_SRC`, `TREX_CRASH_OFFSET` |
+| `src/game/runner/difficulty.js` | `T_REACT`, `FAIR_FRACTION`, `CORRIDOR_*`, `AMBITION_*`, `DINO_ALONG_SCROLL` |
+| `src/game/runner/simulate.js` | `MAX_SUBSTEP_SEC`, `HIT_INSET_PX` |
+| `src/game/runner/spawner.js` | gap via `rowGap()` / `CACTUS_*.minGap` |
+| `src/game/runner/storage.js` | `HI_KEY` |
+
+### For R4+
+- Add `test/runner/spawner.test.js`, `simulate.test.js`, `scoring.test.js`; package.json `"test": "node --test"` if not already present.
+- Tighten gap inflation when shift cap is 0 before roll; bot must wait `T_REACT` after clearing a row.
+- Optional: export pure helpers from spawner for gap/ceiling assertions in Node.
