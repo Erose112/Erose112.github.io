@@ -260,3 +260,33 @@
 - Dino gate DOM label uses `formatHiLabel(readHiScore())`; R3 writes `.hi` and should refresh label on return to world (`World` already re-reads on `mode === 'world'`).
 - `App` Escape while `mode === 'runner'` exits to desert; R6 extends Escape for pause/play.
 - Do not add `'dino'` to `visited` or section path dots.
+
+## R2 — Runner core (completed)
+
+### Built
+- `src/game/clock.js` — shared `frameDelta` clamped to **0.05 s**.
+- `src/game/runner/constants.js` — playfield **180**, track **52–136**, runner scale `S_run`, dino x clamp, speed constants.
+- `src/game/runner/scoring.js` — `distanceRan`, score `round(ceil(distance)*0.025)`, speed ramp, 100-point flash timing (visual only).
+- `src/game/runner/RunnerGame.js` — ready / playing / paused, letterbox, horizon tile scroll, filled clouds, vertical lane movement, sprite HUD (`HI` + digits), blink/run anim, pause on hide/blur/resize.
+- `src/game/input.js` — `setAxisMode('vertical'|'plane')` for runner up/down.
+- `src/game/Game.js` — runner owns canvas scale while active; `stopRunner()` restores desert scale; keyboard `preventDefault` when runner wants keys.
+- `src/components/RunnerOverlay.jsx` — **PRESS SPACE TO START** / **TAP TO START**, **PAUSED** cue.
+- `src/components/World.jsx` — runner aria-label, overlay phase poll, coarse tap-to-start on canvas.
+
+### Deviations
+- **Hide/tab resume:** After `visibilitychange` back to visible (or window `focus`), a pause from blur/hidden auto-resumes with `lastTime` reset so score does not spike—R6 may replace this with an explicit Resume control.
+- **Orientation resize pause:** Resumes on the next **Space** edge (no Resume button until R6).
+- **Touch movement:** Vertical stick deferred to R6; tap-to-start uses `queueTouchJump()` on coarse pointers only.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `PLAYFIELD_H`, `TRACK_*`, `LANE_SPEED`, `computeRunnerScale`, `RUN_REF_W` (600), `dinoScreenX`, `SPEED_*`, cloud band/gaps, HUD glyph crops |
+| `src/game/runner/scoring.js` | score factor **0.025**, `SPEED_START/MAX/ACCEL` |
+| `src/game/clock.js` | `MAX_FRAME_DT` |
+
+### For R3+
+- `cameraX` / `runningTime` exist for scroll and `clearTime` gating; add spawner rows and `simulate.js` collision.
+- HI on HUD is read-only via `readHiScore()`; write on crash and refresh gate label on desert return.
+- `phase === 'over'` not used yet; crash frame offset **220**, game-over crop, Restart DOM (R3).
+- Cacti draw uses footprint sort by foot y inside the track band.

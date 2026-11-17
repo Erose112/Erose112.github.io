@@ -69,6 +69,9 @@ export default function World({
     /** @type {{ x: number, y: number } | null} */ (null),
   )
   const [dinoHiLine, setDinoHiLine] = useState(() => formatHiLabel(readHiScore()))
+  const [runnerPhase, setRunnerPhase] = useState(
+    /** @type {'ready' | 'playing' | 'paused'} */ ('ready'),
+  )
 
   const onGameReadyRef = useRef(onGameReady)
   const onPortalEnterRef = useRef(onPortalEnter)
@@ -181,6 +184,14 @@ export default function World({
     observerRef.current = ro
 
     let cancelled = false
+    let phaseRaf = 0
+    const pollRunnerPhase = () => {
+      const runner = game.runner
+      if (runner && !runner.disposed) {
+        setRunnerPhase(runner.phase)
+      }
+      phaseRaf = requestAnimationFrame(pollRunnerPhase)
+    }
     ;(async () => {
       await game.start()
       if (cancelled) {
@@ -188,10 +199,12 @@ export default function World({
       }
       setGameInput(game.input)
       canvas.focus({ preventScroll: true })
+      phaseRaf = requestAnimationFrame(pollRunnerPhase)
     })()
 
     return () => {
       cancelled = true
+      cancelAnimationFrame(phaseRaf)
       ro.disconnect()
       observerRef.current = null
       game.destroy()
@@ -214,6 +227,7 @@ export default function World({
     } else if (mode === 'runner') {
       game.setLoopMode('runner')
       game.startRunner()
+      setRunnerPhase(game.runner?.phase ?? 'ready')
     }
   }, [mode])
 
@@ -249,6 +263,9 @@ export default function World({
     const game = gameRef.current
     if (!game) {
       return false
+    }
+    if (game.loopMode === 'runner') {
+      return game.runner?.wantsKeyboardCapture() ?? false
     }
     return game.loopMode === 'world' || game.loopMode === 'transition'
   }
@@ -292,8 +309,17 @@ export default function World({
         width={1}
         height={1}
         tabIndex={0}
-        aria-label="Desert game. Move with WASD or arrow keys. Press Space to jump into portals."
-        onPointerDown={() => canvasRef.current?.focus({ preventScroll: true })}
+        aria-label={
+          mode === 'runner'
+            ? 'Dino Run. Move up and down with arrow keys or W and S. Press Space to start. Escape to leave.'
+            : 'Desert game. Move with WASD or arrow keys. Press Space to jump into portals.'
+        }
+        onPointerDown={() => {
+          canvasRef.current?.focus({ preventScroll: true })
+          if (mode === 'runner' && coarsePointer) {
+            gameInput?.queueTouchJump()
+          }
+        }}
       />
       <div
         className="portal-label-layer pointer-events-none absolute inset-0 z-10"
@@ -328,7 +354,11 @@ export default function World({
         </div>
       </div>
       {showRunnerChrome && onRunnerBack ? (
-        <RunnerOverlay onBack={onRunnerBack} />
+        <RunnerOverlay
+          onBack={onRunnerBack}
+          coarsePointer={coarsePointer}
+          phase={runnerPhase}
+        />
       ) : null}
       {welcomeOpen && mode === 'world' && welcomeAnchor ? (
         <WelcomeBanner

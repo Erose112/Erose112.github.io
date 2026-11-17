@@ -133,20 +133,23 @@ export class Game {
       this.runner = new RunnerGame(this.canvas, {
         sprite: this.sprite,
         input: this.input,
+        cloudSprite: this.cloudSprite,
+        reduceMotion: this.reduceMotion,
       })
     }
-    this.runner.enterReady()
-    this.runner.start()
-    const dpr = window.devicePixelRatio || 1
     const w = this.canvas.clientWidth || window.innerWidth
     const h = this.canvas.clientHeight || window.innerHeight
     this.runner.resize(this.pixelBox, w, h)
+    this.runner.enterReady()
+    this.runner.start()
   }
 
   stopRunner() {
     this.runner?.destroy()
     this.runner = null
-    this.draw()
+    const w = this.canvas.clientWidth || window.innerWidth
+    const h = this.canvas.clientHeight || window.innerHeight
+    this.resize(this.pixelBox, w, h)
   }
 
   setInputLocked(locked) {
@@ -245,7 +248,12 @@ export class Game {
     this.cloudSprite = buildCloudSprite(this.sprite)
     document.addEventListener('visibilitychange', this._onVisibility)
     this.input = new GameInput()
-    this.input.attach(() => this._isLoopActive())
+    this.input.attach(() => {
+      if (this.loopMode === 'runner') {
+        return this.runner?.wantsKeyboardCapture() ?? false
+      }
+      return this._isLoopActive()
+    })
     this.resize(
       null,
       this.canvas.clientWidth || window.innerWidth,
@@ -268,6 +276,11 @@ export class Game {
     const dpr = window.devicePixelRatio || 1
     const w = clientW ?? this.canvas.clientWidth ?? window.innerWidth
     const h = clientH ?? this.canvas.clientHeight ?? window.innerHeight
+    if (this.loopMode === 'runner' && this.runner) {
+      this.runner.resize(this.pixelBox, w, h)
+      return
+    }
+
     const applied = applyCanvasScale(this.canvas, w, h, dpr, this.pixelBox)
     if (!applied) {
       return
@@ -279,10 +292,6 @@ export class Game {
     this.cssPxPerGame = applied.S / dpr
 
     layoutScreenClouds(this.clouds, this.viewW, this.viewH)
-
-    if (this.loopMode === 'runner' && this.runner) {
-      this.runner.resize(this.pixelBox, w, h)
-    }
 
     const anchor = cameraAnchor(this.viewH)
     const footScreenY = anchor * this.viewH

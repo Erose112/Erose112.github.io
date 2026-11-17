@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: r2-core
     content: "R2: Runner scale capped by playfield height, scrolling playfield, up/down movement, ready latch, score HUD, speed ramp, and pause."
-    status: pending
+    status: completed
   - id: r3-death
     content: "R3: One-corridor cactus rows, sub-stepped collision, crash, game-over panel, and persisted HI score."
     status: pending

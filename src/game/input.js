@@ -27,6 +27,8 @@ export class GameInput {
     this.jumpHeld = false
     this._ignoreJumpUntilRelease = false
     this.touchAxis = { x: 0, y: 0 }
+    /** @type {'plane' | 'vertical'} */
+    this.axisMode = 'plane'
     this._shouldPrevent = () => true
     this._onKeyDown = this._onKeyDown.bind(this)
     this._onKeyUp = this._onKeyUp.bind(this)
@@ -49,6 +51,11 @@ export class GameInput {
     window.removeEventListener('blur', this._onBlur)
     document.removeEventListener('visibilitychange', this._onVisibility)
     this.clearAll()
+  }
+
+  /** @param {'plane' | 'vertical'} mode */
+  setAxisMode(mode) {
+    this.axisMode = mode
   }
 
   setInputLocked(locked) {
@@ -168,10 +175,14 @@ export class GameInput {
       y /= SQRT2
     }
 
+    if (this.axisMode === 'vertical') {
+      x = 0
+    }
+
     const tx = this.touchAxis.x
     const ty = this.touchAxis.y
     if (tx !== 0 || ty !== 0) {
-      x += tx
+      x += this.axisMode === 'vertical' ? 0 : tx
       y += ty
       const mag = Math.hypot(x, y)
       if (mag > 1) {
