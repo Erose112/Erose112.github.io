@@ -1,3 +1,5 @@
+import { site } from '../content.js'
+
 /**
  * @param {{
  *   onSkip: () => void,
@@ -18,6 +20,14 @@ export default function Hud({ onSkip, show }) {
       >
         SKIP GAME
       </button>
+      <a
+        href={site.linkedIn.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="game-action-btn font-display pointer-events-auto absolute right-[max(1rem,env(safe-area-inset-right,0px))] top-[max(1rem,env(safe-area-inset-top,0px))] border-2 border-ink bg-desert px-2 py-2 text-base text-ink"
+      >
+        ETHAN ROSE
+      </a>
     </div>
   )
 }

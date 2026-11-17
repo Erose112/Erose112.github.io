@@ -20,10 +20,18 @@ export default function AboutSection({ showHeading = true }) {
         {site.intro}
       </p>
 
-      <p className="section-copy mt-2">
-        <span className="font-bold">{site.aboutLabel}</span>{' '}
-        {site.aboutBody}
-      </p>
+      <p className="section-copy mt-2">{site.lookingFor}</p>
+
+      <div className="mt-2">
+        <p className="section-copy">
+          <span className="font-bold">{site.aboutLabel}</span>
+        </p>
+        <ul className="section-copy mt-2 list-disc space-y-2 pl-6">
+          {site.aboutItems.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      </div>
 
       <p className="section-copy mt-8">
         {site.socialIntro}{' '}

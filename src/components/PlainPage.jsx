@@ -1,7 +1,9 @@
 import { chromiumAttribution } from '../content.js'
 import AboutSection from './AboutSection.jsx'
+import EducationSection from './EducationSection.jsx'
 import ExperienceSection from './ExperienceSection.jsx'
 import ProjectsSection from './ProjectsSection.jsx'
+import SkillsSection from './SkillsSection.jsx'
 
 /** @param {{ onPlayGame: () => void }} props */
 export default function PlainPage({ onPlayGame }) {
@@ -18,6 +20,8 @@ export default function PlainPage({ onPlayGame }) {
           </button>
         </p>
         <AboutSection />
+        <EducationSection />
+        <SkillsSection />
         <ExperienceSection />
         <ProjectsSection />
 

@@ -23,7 +23,7 @@ export default function ExitButton({ onPress }) {
   return (
     <button
       type="button"
-      className="section-exit-btn game-action-btn fixed left-1/2 top-[max(1rem,env(safe-area-inset-top,0px))] z-10 -translate-x-1/2 overflow-hidden border-2 border-ink bg-desert p-0 pixelated"
+      className="section-exit-btn game-action-btn fixed right-[max(1rem,env(safe-area-inset-right,0px))] top-[max(1rem,env(safe-area-inset-top,0px))] z-10 overflow-hidden border-2 border-ink bg-desert p-0 pixelated"
       style={{ width: cssW, height: cssH }}
       aria-keyshortcuts="Escape"
       onClick={() => onPress?.()}

@@ -14,9 +14,12 @@ export default function ExperienceSection() {
 
       <div className="mt-6 space-y-8">
         {experienceSection.roles.map((role) => (
-          <div key={role.title} className="max-w-5xl">
+          <div key={`${role.title}-${role.meta}`} className="max-w-5xl">
             <p className="section-copy">{role.title}</p>
             <p className="section-meta mt-1 opacity-90">{role.meta}</p>
+            {role.tech?.length ? (
+              <p className="section-meta mt-1 opacity-90">{role.tech.join(' · ')}</p>
+            ) : null}
             <ExpandableDescription>{role.description}</ExpandableDescription>
           </div>
         ))}

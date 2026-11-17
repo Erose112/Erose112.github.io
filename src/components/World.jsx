@@ -63,9 +63,6 @@ export default function World({
   const [welcomeAnchor, setWelcomeAnchor] = useState(
     /** @type {{ x: number, y: number } | null} */ (null),
   )
-  const [edgeHints, setEdgeHints] = useState(
-    /** @type {{ id: string, label: string, side: 'left' | 'right' | 'top' | 'bottom' }[]} */ ([]),
-  )
 
   const onGameReadyRef = useRef(onGameReady)
   const onPortalEnterRef = useRef(onPortalEnter)
@@ -211,51 +208,6 @@ export default function World({
     }
   }, [mode])
 
-  useEffect(() => {
-    if (mode !== 'world' && mode !== 'transition') {
-      const clearId = requestAnimationFrame(() => {
-        setEdgeHints([])
-      })
-      return () => cancelAnimationFrame(clearId)
-    }
-    let raf = 0
-    const tick = () => {
-      const game = gameRef.current
-      if (!game) {
-        raf = requestAnimationFrame(tick)
-        return
-      }
-      const { portals } = game.getCameraState()
-      /** @type {typeof edgeHints} */
-      const next = []
-      for (const portal of portals) {
-        if (visited.has(portal.id)) {
-          continue
-        }
-        if (game.isPortalVisible(portal.anchor)) {
-          continue
-        }
-        const anchor = portal.anchor
-        const left = game.camX
-        const right = game.camX + game.viewW
-        const top = game.camY
-        let side = 'bottom'
-        if (anchor.x < left) {
-          side = 'left'
-        } else if (anchor.x > right) {
-          side = 'right'
-        } else if (anchor.y < top) {
-          side = 'top'
-        }
-        next.push({ id: portal.id, label: portal.label, side })
-      }
-      setEdgeHints(next)
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [mode, visited])
-
   const cueText = (() => {
     if (!proximityId) {
       return ''
@@ -303,12 +255,6 @@ export default function World({
         {exitAnnouncement}
       </p>
       <Hud onSkip={onSkip} show={showHud} />
-      <p
-        className="font-display pointer-events-none absolute left-1/2 top-[max(3.25rem,env(safe-area-inset-top,0px))] z-20 -translate-x-1/2 text-[10px] text-ink sm:text-xs"
-        aria-hidden
-      >
-        ETHAN ROSE
-      </p>
       <TouchControls
         input={gameInput}
         show={showTouch}
@@ -349,16 +295,6 @@ export default function World({
           </div>
         ))}
       </div>
-      {edgeHints.map((hint) => (
-        <div
-          key={hint.id}
-          className={`portal-edge-hint portal-edge-hint--${hint.side} font-display`}
-          aria-hidden
-        >
-          <span className="portal-edge-arrow" />
-          <span className="text-[10px] sm:text-xs">{hint.label}</span>
-        </div>
-      ))}
       {welcomeOpen && mode === 'world' && welcomeAnchor ? (
         <WelcomeBanner
           reduceMotion={reduceMotion}
