@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { CUE_BLINK_MS, WELCOME_BLINK_MS, WELCOME_DISMISS_MS } from '../game/constants.js'
+import { formatHiLabel, readHiScore } from '../game/runner/storage.js'
 import { Game } from '../game/Game.js'
 import Hud from './Hud.jsx'
+import RunnerOverlay from './RunnerOverlay.jsx'
 import TouchControls from './TouchControls.jsx'
 
 const PORTAL_LABELS = [
@@ -14,18 +16,20 @@ const PORTAL_ARIA_NAMES = {
   about: 'About',
   experience: 'Experience',
   projects: 'Projects',
+  dino: 'Dino Run',
 }
 
 /**
  * @param {{
- *   mode: 'world' | 'transition' | 'section' | 'plain',
+ *   mode: 'world' | 'transition' | 'section' | 'plain' | 'runner',
  *   wipe: 'none' | 'enter' | 'exit',
  *   visited: Set<string>,
  *   onSkip: () => void,
  *   worldCanvasRef?: import('react').RefObject<HTMLCanvasElement | null>,
  *   exitAnnouncement?: string,
  *   onGameReady: (game: import('../game/Game.js').Game) => void,
- *   onPortalEnter: (id: 'about' | 'experience' | 'projects', game: import('../game/Game.js').Game) => void,
+ *   onPortalEnter: (id: 'about' | 'experience' | 'projects' | 'dino', game: import('../game/Game.js').Game) => void,
+ *   onRunnerBack?: () => void,
  * }} props
  */
 export default function World({
@@ -37,6 +41,7 @@ export default function World({
   exitAnnouncement = '',
   onGameReady,
   onPortalEnter,
+  onRunnerBack,
 }) {
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
@@ -63,6 +68,7 @@ export default function World({
   const [welcomeAnchor, setWelcomeAnchor] = useState(
     /** @type {{ x: number, y: number } | null} */ (null),
   )
+  const [dinoHiLine, setDinoHiLine] = useState(() => formatHiLabel(readHiScore()))
 
   const onGameReadyRef = useRef(onGameReady)
   const onPortalEnterRef = useRef(onPortalEnter)
@@ -205,12 +211,26 @@ export default function World({
       game.setLoopMode('section')
     } else if (mode === 'plain') {
       game.setLoopMode('plain')
+    } else if (mode === 'runner') {
+      game.setLoopMode('runner')
+      game.startRunner()
+    }
+  }, [mode])
+
+  useEffect(() => {
+    if (mode === 'world') {
+      setDinoHiLine(formatHiLabel(readHiScore()))
     }
   }, [mode])
 
   const cueText = (() => {
     if (!proximityId) {
       return ''
+    }
+    if (proximityId === 'dino') {
+      return coarsePointer
+        ? 'Dino Run. Tap jump to enter.'
+        : 'Dino Run. Press Space to enter.'
     }
     const name = PORTAL_ARIA_NAMES[proximityId] ?? proximityId
     const action = coarsePointer ? 'Tap jump' : 'Press Space'
@@ -223,6 +243,7 @@ export default function World({
   const showHud = mode === 'world' || mode === 'transition'
   const showTouch =
     coarsePointer && (mode === 'world' || mode === 'transition')
+  const showRunnerChrome = mode === 'runner'
 
   const preventGameDefault = () => {
     const game = gameRef.current
@@ -294,7 +315,21 @@ export default function World({
             {text}
           </div>
         ))}
+        <div
+          ref={(node) => {
+            labelRefs.current.dino = node
+          }}
+          className="portal-label portal-label--dino font-display absolute left-0 top-0 text-center text-ink"
+        >
+          <span className="block whitespace-nowrap">DINO RUN</span>
+          <span className="mt-1 block whitespace-nowrap text-[10px] sm:text-xs">
+            {dinoHiLine}
+          </span>
+        </div>
       </div>
+      {showRunnerChrome && onRunnerBack ? (
+        <RunnerOverlay onBack={onRunnerBack} />
+      ) : null}
       {welcomeOpen && mode === 'world' && welcomeAnchor ? (
         <WelcomeBanner
           reduceMotion={reduceMotion}

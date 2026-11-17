@@ -4,7 +4,7 @@ overview: Add a side-scrolling Dino Run scene behind a fourth overworld gate, re
 todos:
   - id: r1-gate
     content: "R1: Extend the desert south, add the DINO RUN gate (no path, not in visited), and route #dino-run through the existing hop and syncFromLocation."
-    status: pending
+    status: completed
   - id: r2-core
     content: "R2: Runner scale capped by playfield height, scrolling playfield, up/down movement, ready latch, score HUD, speed ramp, and pause."
     status: pending

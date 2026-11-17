@@ -1,10 +1,12 @@
 import { assetUrl } from '../assetUrl.js'
 
 export const WORLD_WIDTH = 960
-export const WORLD_HEIGHT = 560
+export const WORLD_HEIGHT = 780
 export const SKY_BOTTOM = 100
 export const GROUND_TOP = 120
-export const GROUND_BOTTOM = 540
+/** North desert band unchanged when extending south (PLAN-DINO-RUN §6). */
+export const GROUND_NORTH_BOTTOM = 540
+export const GROUND_BOTTOM = 760
 export const WALK_LEFT = 24
 export const WALK_RIGHT = 936
 
@@ -32,10 +34,25 @@ export const JOYSTICK_DEADZONE = 0.2
 
 /** Opening centers; return point is same x, y + PORTAL_RETURN_OFFSET_Y. */
 export const PORTAL_DEFS = [
-  { id: 'about', x: 220, y: 300, label: 'ABOUT' },
-  { id: 'experience', x: 480, y: 190, label: 'EXPERIENCE' },
-  { id: 'projects', x: 740, y: 300, label: 'PROJECTS' },
+  { id: 'about', x: 220, y: 300, label: 'ABOUT', path: true },
+  { id: 'experience', x: 480, y: 190, label: 'EXPERIENCE', path: true },
+  { id: 'projects', x: 740, y: 300, label: 'PROJECTS', path: true },
 ]
+
+/** Dino Run gate: no path dots, not in `visited` (PLAN-DINO-RUN §6). */
+export const DINO_RUN_PORTAL_DEF = {
+  id: 'dino',
+  x: 480,
+  y: 660,
+  label: 'DINO RUN',
+  path: false,
+}
+
+/** Gate pterodactyl: sprite bottom this many game px above `DINO_RUN_PORTAL_DEF.y`. */
+export const DINO_GATE_PTERO_ABOVE_GROUND = 52
+export const DINO_GATE_PTERO_BOB_PX = 3
+/** Label bottom edge above ptero top at max upward bob (game px). */
+export const DINO_GATE_LABEL_GAP_ABOVE_PTERO = 6
 
 export const HEADROOM = 147
 

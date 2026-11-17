@@ -25,6 +25,7 @@ export class GameInput {
     this.inputLocked = false
     this.jumpQueued = false
     this.jumpHeld = false
+    this._ignoreJumpUntilRelease = false
     this.touchAxis = { x: 0, y: 0 }
     this._shouldPrevent = () => true
     this._onKeyDown = this._onKeyDown.bind(this)
@@ -71,14 +72,24 @@ export class GameInput {
   }
 
   queueTouchJump() {
-    if (!this.inputLocked) {
-      this.jumpQueued = true
-      this.jumpHeld = true
+    if (this.inputLocked || this._ignoreJumpUntilRelease) {
+      return
+    }
+    this.jumpQueued = true
+    this.jumpHeld = true
+  }
+
+  /** Runner ready: drop queued jump; ignore held Space until release. */
+  clearJumpLatchForReady() {
+    this.jumpQueued = false
+    if (this.jumpHeld) {
+      this._ignoreJumpUntilRelease = true
     }
   }
 
   releaseTouchJump() {
     this.jumpHeld = false
+    this._ignoreJumpUntilRelease = false
   }
 
   /** @param {KeyboardEvent} e */
@@ -90,7 +101,7 @@ export class GameInput {
       e.preventDefault()
     }
     if (e.code === 'Space') {
-      if (!this.inputLocked) {
+      if (!this.inputLocked && !this._ignoreJumpUntilRelease) {
         this.jumpQueued = true
         this.jumpHeld = true
       }
@@ -105,6 +116,7 @@ export class GameInput {
   _onKeyUp(e) {
     if (e.code === 'Space') {
       this.jumpHeld = false
+      this._ignoreJumpUntilRelease = false
       return
     }
     this.held.delete(e.code)

@@ -43,6 +43,11 @@ body {
   padding: 0 4px;
 }
 
+.portal-label--dino {
+  background-color: var(--color-desert);
+  padding: 2px 4px;
+}
+
 .font-display {
   font-family: var(--font-display);
   -webkit-font-smoothing: none;

@@ -18,6 +18,10 @@ import {
   FLANK_FOOTPRINT_W,
   FOOTPRINT_H,
   FOOTPRINT_W,
+  DINO_GATE_LABEL_GAP_ABOVE_PTERO,
+  DINO_GATE_PTERO_ABOVE_GROUND,
+  DINO_GATE_PTERO_BOB_PX,
+  DINO_RUN_PORTAL_DEF,
   GATE_FLANK_OUTSET,
   GATE_GAP,
   GROUND_BOTTOM,
@@ -87,54 +91,74 @@ function clampFootprint(footX, footY) {
 }
 
 /**
- * @typedef {'about' | 'experience' | 'projects'} PortalId
+ * @typedef {'about' | 'experience' | 'projects' | 'dino'} PortalId
  * @typedef {{
  *   id: PortalId,
  *   centerX: number,
  *   footY: number,
  *   label: string,
+ *   noFlanks: boolean,
  *   leftPost: { footX: number, footY: number },
  *   rightPost: { footX: number, footY: number },
- *   leftFlank: { footX: number, footY: number },
- *   rightFlank: { footX: number, footY: number },
+ *   leftFlank: { footX: number, footY: number } | null,
+ *   rightFlank: { footX: number, footY: number } | null,
  *   trigger: { centerX: number, centerY: number, w: number, h: number },
  *   returnPoint: { x: number, y: number },
+ *   gatePtero?: { frame: number, frameElapsed: number, bobT: number },
  * }} PortalGate
  */
 
-/** @returns {PortalGate[]} */
-export function createPortals() {
+/**
+ * @param {{ id: PortalId, x: number, y: number, label: string, path?: boolean }} def
+ * @param {{ returnNorth?: boolean, noFlanks?: boolean, gatePtero?: PortalGate['gatePtero'] }} [opts]
+ * @returns {PortalGate}
+ */
+function buildPortalGate(def, opts = {}) {
   const largeW = ATLAS.cactusLarge.w
   const smallW = ATLAS.cactusSmall.w
   const halfGap = GATE_GAP / 2
+  const footY = def.y
+  const centerX = def.x
+  const leftPostFootX = centerX - halfGap - largeW / 2
+  const rightPostFootX = centerX + halfGap + largeW / 2
+  const noFlanks = opts.noFlanks === true
+  const leftFlankFootX = leftPostFootX - largeW / 2 - GATE_FLANK_OUTSET - smallW / 2
+  const rightFlankFootX = rightPostFootX + largeW / 2 + GATE_FLANK_OUTSET + smallW / 2
+  const triggerCenterY = footY - PORTAL_TRIGGER_H / 2
+  const returnY = opts.returnNorth
+    ? footY - PORTAL_RETURN_OFFSET_Y
+    : footY + PORTAL_RETURN_OFFSET_Y
 
-  return PORTAL_DEFS.map((def) => {
-    const footY = def.y
-    const centerX = def.x
-    const leftPostFootX = centerX - halfGap - largeW / 2
-    const rightPostFootX = centerX + halfGap + largeW / 2
-    const leftFlankFootX = leftPostFootX - largeW / 2 - GATE_FLANK_OUTSET - smallW / 2
-    const rightFlankFootX = rightPostFootX + largeW / 2 + GATE_FLANK_OUTSET + smallW / 2
-    const triggerCenterY = footY - PORTAL_TRIGGER_H / 2
-
-    return {
-      id: def.id,
+  return {
+    id: def.id,
+    centerX,
+    footY,
+    label: def.label,
+    noFlanks,
+    leftPost: { footX: leftPostFootX, footY },
+    rightPost: { footX: rightPostFootX, footY },
+    leftFlank: noFlanks ? null : { footX: leftFlankFootX, footY },
+    rightFlank: noFlanks ? null : { footX: rightFlankFootX, footY },
+    trigger: {
       centerX,
-      footY,
-      label: def.label,
-      leftPost: { footX: leftPostFootX, footY },
-      rightPost: { footX: rightPostFootX, footY },
-      leftFlank: { footX: leftFlankFootX, footY },
-      rightFlank: { footX: rightFlankFootX, footY },
-      trigger: {
-        centerX,
-        centerY: triggerCenterY,
-        w: PORTAL_TRIGGER_W,
-        h: PORTAL_TRIGGER_H,
-      },
-      returnPoint: { x: centerX, y: footY + PORTAL_RETURN_OFFSET_Y },
-    }
+      centerY: triggerCenterY,
+      w: PORTAL_TRIGGER_W,
+      h: PORTAL_TRIGGER_H,
+    },
+    returnPoint: { x: centerX, y: returnY },
+    gatePtero: opts.gatePtero,
+  }
+}
+
+/** @returns {PortalGate[]} */
+export function createPortals() {
+  const sectionGates = PORTAL_DEFS.map((def) => buildPortalGate(def, { noFlanks: false }))
+  const dinoGate = buildPortalGate(DINO_RUN_PORTAL_DEF, {
+    returnNorth: true,
+    noFlanks: true,
+    gatePtero: { frame: 0, frameElapsed: 0, bobT: 0 },
   })
+  return [...sectionGates, dinoGate]
 }
 
 /** @param {PortalGate[]} portals */
@@ -153,17 +177,21 @@ export function portalSolidColliders(portals) {
         footY: gate.rightPost.footY,
         footprint: { w: POST_FOOTPRINT_W, h: POST_FOOTPRINT_H },
       },
-      {
-        footX: gate.leftFlank.footX,
-        footY: gate.leftFlank.footY,
-        footprint: { w: FLANK_FOOTPRINT_W, h: FLANK_FOOTPRINT_H },
-      },
-      {
-        footX: gate.rightFlank.footX,
-        footY: gate.rightFlank.footY,
-        footprint: { w: FLANK_FOOTPRINT_W, h: FLANK_FOOTPRINT_H },
-      },
     )
+    if (!gate.noFlanks && gate.leftFlank && gate.rightFlank) {
+      solids.push(
+        {
+          footX: gate.leftFlank.footX,
+          footY: gate.leftFlank.footY,
+          footprint: { w: FLANK_FOOTPRINT_W, h: FLANK_FOOTPRINT_H },
+        },
+        {
+          footX: gate.rightFlank.footX,
+          footY: gate.rightFlank.footY,
+          footprint: { w: FLANK_FOOTPRINT_W, h: FLANK_FOOTPRINT_H },
+        },
+      )
+    }
   }
   return solids
 }
@@ -577,6 +605,75 @@ export function updatePterodactyl(ptero, now, dt, camX, camY, viewW, viewH, redu
  * @param {CanvasImageSource} img
  * @param {ReturnType<typeof createPterodactylState>} ptero
  */
+/**
+ * @param {PortalGate[]} portals
+ * @param {number} dt
+ * @param {boolean} reduceMotion
+ */
+export function updateDinoGatePteros(portals, dt, reduceMotion) {
+  if (reduceMotion) {
+    return
+  }
+  for (const gate of portals) {
+    const deco = gate.gatePtero
+    if (!deco) {
+      continue
+    }
+    deco.bobT += dt
+    deco.frameElapsed += dt * 1000
+    while (deco.frameElapsed >= PTERO_FRAME_MS) {
+      deco.frameElapsed -= PTERO_FRAME_MS
+      deco.frame = deco.frame === 0 ? 1 : 0
+    }
+  }
+}
+
+/**
+ * @param {PortalGate} gate
+ * @returns {{ x: number, y: number }}
+ */
+function dinoGatePteroPosition(gate) {
+  const { w: pteroW, h: pteroH } = ATLAS_REF.pterodactyl
+  const bob = gate.gatePtero
+    ? Math.sin(gate.gatePtero.bobT * Math.PI * 2 / 2.4) * DINO_GATE_PTERO_BOB_PX
+    : 0
+  const bottomY = gate.footY - DINO_GATE_PTERO_ABOVE_GROUND + bob
+  const topY = bottomY - pteroH
+  return { x: Math.round(gate.centerX - pteroW / 2), y: Math.round(topY) }
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasImageSource} img
+ * @param {PortalGate} gate
+ */
+export function drawGatePterodactyl(ctx, img, gate) {
+  const deco = gate.gatePtero
+  if (!deco) {
+    return
+  }
+  const atlas = deco.frame === 0 ? ATLAS_REF.pterodactyl : ATLAS_REF.pterodactylFrame2
+  const { x: sx, y: sy, w, h } = atlas
+  const pos = dinoGatePteroPosition(gate)
+  ctx.drawImage(img, sx, sy, w, h, pos.x, pos.y, w, h)
+}
+
+/**
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {CanvasImageSource} img
+ * @param {PortalGate} gate
+ */
+export function drawDinoGateOpeningStrip(ctx, img, gate) {
+  if (gate.id !== 'dino') {
+    return
+  }
+  const { x: hsx, y: hsy, w: hw, h: hh } = ATLAS.horizon
+  const stripW = GATE_GAP
+  const drawX = Math.round(gate.centerX - stripW / 2)
+  const drawY = Math.round(gate.footY - hh)
+  ctx.drawImage(img, hsx, hsy, Math.min(hw, stripW), hh, drawX, drawY, stripW, hh)
+}
+
 export function drawPterodactyl(ctx, img, ptero) {
   if (!ptero.active) {
     return
@@ -693,6 +790,9 @@ export function drawPortalPart(ctx, img, gate, part) {
         : part === 'leftFlank'
           ? gate.leftFlank
           : gate.rightFlank
+  if (!foot) {
+    return
+  }
   const kind = part === 'leftFlank' || part === 'rightFlank' ? 'small' : 'large'
   drawCactus(ctx, img, foot.footX, foot.footY, kind)
 }
@@ -757,8 +857,10 @@ export function drawSortedActors(
     })
   }
 
-  const parts = ['leftPost', 'rightPost', 'leftFlank', 'rightFlank']
   for (const gate of portals) {
+    const parts = gate.noFlanks
+      ? /** @type {const} */ (['leftPost', 'rightPost'])
+      : /** @type {const} */ (['leftPost', 'rightPost', 'leftFlank', 'rightFlank'])
     for (const part of parts) {
       const foot =
         part === 'leftPost'
@@ -768,11 +870,30 @@ export function drawSortedActors(
             : part === 'leftFlank'
               ? gate.leftFlank
               : gate.rightFlank
+      if (!foot) {
+        continue
+      }
       items.push({
         footY: foot.footY,
         layer: DRAW_LAYER_CACTUS,
         draw: () => drawPortalPart(ctx, img, gate, part),
       })
+    }
+    if (gate.id === 'dino') {
+      items.push({
+        footY: gate.footY,
+        layer: DRAW_LAYER_CACTUS,
+        draw: () => drawDinoGateOpeningStrip(ctx, img, gate),
+      })
+      if (gate.gatePtero) {
+        const pos = dinoGatePteroPosition(gate)
+        const pteroH = ATLAS.pterodactyl.h
+        items.push({
+          footY: pos.y + pteroH,
+          layer: DRAW_LAYER_ACTOR,
+          draw: () => drawGatePterodactyl(ctx, img, gate),
+        })
+      }
     }
   }
 
@@ -824,8 +945,20 @@ export function drawSortedActors(
   }
 }
 
-/** Label anchor in game space: centered above the gate posts. */
+/** Label anchor in game space: point is the label’s bottom center (DOM uses translate(-50%, -100%)). */
 export function portalLabelAnchor(gate) {
+  if (gate.id === 'dino') {
+    const pteroH = ATLAS.pterodactyl.h
+    return {
+      x: gate.centerX,
+      y:
+        gate.footY -
+        DINO_GATE_PTERO_ABOVE_GROUND -
+        pteroH -
+        DINO_GATE_PTERO_BOB_PX -
+        DINO_GATE_LABEL_GAP_ABOVE_PTERO,
+    }
+  }
   return {
     x: gate.centerX,
     y: gate.footY - ATLAS.cactusLarge.h - 12,

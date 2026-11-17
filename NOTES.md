@@ -227,3 +227,36 @@
 - **Cloud fill** is runtime (`buildCloudSprite`), not baked into `100-offline-sprite.png`; sheet outline stays hollow for Chromium fidelity.
 - **Cloud draw order** is layer-hard (cactus behind clouds; clouds behind dino/ptero). Dino vs cactus still y-sorts by foot y.
 - **Section backdrop** uses CSS checkerboard + desert tint rather than sampling the live canvas bitmap (canvas remains visible underneath transparent dialog root).
+
+## R1 — Gate and routing (completed)
+
+### Built
+- `src/game/constants.js` — `WORLD_HEIGHT` **780**, `GROUND_NORTH_BOTTOM` **540**, `GROUND_BOTTOM` **760**, `DINO_RUN_PORTAL_DEF` at **(480, 660)**, `path: false` on section defs.
+- `src/game/entities.js` — fourth gate (posts only, no flanks), decorative gate pterodactyl, opening horizon strip, return **(480, 588)** (`y - 72`).
+- `src/game/ground.js` / `src/game/props.js` — north band unchanged seed/counts; south fill `WORLD_SEED + 11`; spawn path dots skip `path: false`.
+- `src/game/runner/RunnerGame.js` — ready stub (desert fill + own rAF); `src/game/runner/storage.js` — read HI for gate label.
+- `src/game/Game.js` — `loopMode: 'runner'`, `startRunner()` / `stopRunner()`, resize forward.
+- `src/game/input.js` — `clearJumpLatchForReady()` for later Space latch.
+- `src/App.jsx` — `mode: 'runner'`, `#dino-run` before unknown-hash fallback, hop+wipe enter, Back/Esc + `history.back()` / `replaceState(#world)`.
+- `src/components/World.jsx` — `DINO RUN` + HI label (`portal-label--dino`, not visited), runner overlay hook, dino proximity copy.
+- `src/components/RunnerOverlay.jsx` — **BACK TO WORLD**.
+
+### Deviations
+- **Runner overlay in `World.jsx`**, not a sibling in `App.jsx`, so it shares the world shell z-index with the canvas.
+- **South prop count** rolled as **6–10** extra plants (not specified in plan; keeps density light until R7).
+- **Gate ptero bob period** ~**2.4 s** (visual only; plan gives ±**18 px** amplitude via `DINO_GATE_PTERO_BOB_PX`).
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/constants.js` | `WORLD_HEIGHT`, `GROUND_NORTH_BOTTOM`, `GROUND_BOTTOM`, `DINO_RUN_PORTAL_DEF`, `DINO_GATE_PTERO_BOB_PX`, `PORTAL_DEFS[].path` |
+| `src/game/ground.js` | South band slice/pebble/tuft/dune counts (inline `paintGroundBand` calls) |
+| `src/game/props.js` | South `southTarget` **6–10** |
+| `src/game/runner/storage.js` | `HI_KEY` (`ethan-rose.dinoRun.hi`) |
+
+### For R2+
+- `RunnerGame` is a blank canvas; R2 adds scale, letterbox, horizon, clouds, movement, HUD, pause — keep handoff via `Game.startRunner()` / `stopRunner()`.
+- Jump latch already on `GameInput.clearJumpLatchForReady()` — call stays in `RunnerGame.enterReady()`.
+- Dino gate DOM label uses `formatHiLabel(readHiScore())`; R3 writes `.hi` and should refresh label on return to world (`World` already re-reads on `mode === 'world'`).
+- `App` Escape while `mode === 'runner'` exits to desert; R6 extends Escape for pause/play.
+- Do not add `'dino'` to `visited` or section path dots.

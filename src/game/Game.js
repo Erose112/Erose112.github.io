@@ -21,11 +21,13 @@ import {
   portalOverlappingTrigger,
   portalSolidColliders,
   updateDinoAnimation,
+  updateDinoGatePteros,
   updateDinoMoveAndJump,
   updateDust,
   updatePterodactyl,
   updateScreenClouds,
 } from './entities.js'
+import { RunnerGame } from './runner/RunnerGame.js'
 import { buildGroundCanvas, drawGroundLayer } from './ground.js'
 import { GameInput } from './input.js'
 import { createPropCacti, propSolidColliders } from './props.js'
@@ -52,7 +54,7 @@ function clampCamera(camX, camY, viewW, viewH) {
 /**
  * @typedef {{
  *   onProximity?: (id: import('./entities.js').PortalGate['id'] | null) => void,
- *   onEnter?: (id: import('./entities.js').PortalGate['id']) => void,
+ *   onEnter?: (id: import('./entities.js').PortalId) => void,
  *   onApex?: () => void,
  *   onFirstMovement?: () => void,
  *   portalLabels?: Record<string, HTMLElement | null>,
@@ -96,8 +98,10 @@ export class Game {
     this.scaleS = 1
     this.cssPxPerGame = 1
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    /** @type {'world' | 'transition' | 'section' | 'plain'} */
+    /** @type {'world' | 'transition' | 'section' | 'plain' | 'runner'} */
     this.loopMode = 'world'
+    /** @type {RunnerGame | null} */
+    this.runner = null
     this.inputLocked = false
     this.input = null
     this.activePortal = null
@@ -110,10 +114,39 @@ export class Game {
     this._onVisibility = this._onVisibility.bind(this)
   }
 
-  /** @param {'world' | 'transition' | 'section' | 'plain'} mode */
+  /** @param {'world' | 'transition' | 'section' | 'plain' | 'runner'} mode */
   setLoopMode(mode) {
+    const wasRunner = this.loopMode === 'runner'
     this.loopMode = mode
+    if (mode === 'runner' && !wasRunner) {
+      this._syncPauseFromMode()
+      return
+    }
+    if (wasRunner && mode !== 'runner') {
+      this.stopRunner()
+    }
     this._syncPauseFromMode()
+  }
+
+  startRunner() {
+    if (!this.runner) {
+      this.runner = new RunnerGame(this.canvas, {
+        sprite: this.sprite,
+        input: this.input,
+      })
+    }
+    this.runner.enterReady()
+    this.runner.start()
+    const dpr = window.devicePixelRatio || 1
+    const w = this.canvas.clientWidth || window.innerWidth
+    const h = this.canvas.clientHeight || window.innerHeight
+    this.runner.resize(this.pixelBox, w, h)
+  }
+
+  stopRunner() {
+    this.runner?.destroy()
+    this.runner = null
+    this.draw()
   }
 
   setInputLocked(locked) {
@@ -247,6 +280,10 @@ export class Game {
 
     layoutScreenClouds(this.clouds, this.viewW, this.viewH)
 
+    if (this.loopMode === 'runner' && this.runner) {
+      this.runner.resize(this.pixelBox, w, h)
+    }
+
     const anchor = cameraAnchor(this.viewH)
     const footScreenY = anchor * this.viewH
     const targetX = this.dino.footX - this.viewW / 2
@@ -350,6 +387,7 @@ export class Game {
       this.dino.moveSpeed = 0
       updateDinoAnimation(this.dino, now, 0)
       this.updateCamera()
+      updateDinoGatePteros(this.portals, dt, this.reduceMotion)
       if (!this.reduceMotion) {
         updateScreenClouds(this.clouds, dt, this.viewW, this.viewH, this.camX)
         updatePterodactyl(
@@ -409,6 +447,7 @@ export class Game {
     this.updateCamera()
     this._updatePortalProximity()
 
+    updateDinoGatePteros(this.portals, dt, this.reduceMotion)
     if (!this.reduceMotion) {
       updateScreenClouds(this.clouds, dt, this.viewW, this.viewH, this.camX)
       updatePterodactyl(
@@ -453,6 +492,7 @@ export class Game {
   destroy() {
     this.disposed = true
     this.running = false
+    this.stopRunner()
     this.input?.destroy()
     this.input = null
     if (this.rafId) {
