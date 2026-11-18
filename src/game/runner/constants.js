@@ -1,13 +1,11 @@
-import { DESERT_COLOR } from '../constants.js'
-
-export { DESERT_COLOR }
+export const DESERT_COLOR = '#f7f7f7'
 
 /** Fixed playfield height in runner game pixels (PLAN-DINO-RUN §4). */
 export const PLAYFIELD_H = 180
 
 export const SKY_BOTTOM = 36
 export const TRACK_TOP = 52
-export const TRACK_BOTTOM = 200
+export const TRACK_BOTTOM = 136
 export const TRACK_DEPTH = TRACK_BOTTOM - TRACK_TOP
 
 export const FOOTPRINT_W = 28
@@ -28,6 +26,12 @@ export const RUN_REF_W = 600
 export const SPEED_START = 6
 export const SPEED_MAX = 13
 export const SPEED_ACCEL = 0.001
+
+/** Slow mode (R6 UI later); used by fairness bot tests. */
+export const SLOW_SPEED_START = 4.2
+export const SLOW_SPEED_MAX = 9
+export const SLOW_SPEED_ACCEL = 0.0005
+export const SLOW_GAP_COEFFICIENT = 0.6
 
 export const HORIZON_TILE_W = 600
 export const HORIZON_H = 12
@@ -108,3 +112,15 @@ export const GAME_OVER_SRC = { x: 655, y: 15, w: 191, h: 11 }
 export const GAME_OVER_Y_FRAC = Math.round((PLAYFIELD_H - 25) / 3)
 
 export const TREX_CRASH_OFFSET = 220
+
+/** Bird rows (PLAN-DINO-RUN §10). */
+export const BIRD_MIN_SPEED = 8.5
+export const BIRD_SPAWN_CHANCE = 0.4
+export const BIRD_SHADOW_DEPTH = 12
+export const BIRD_SHADOW_WIDTH = 46
+export const BIRD_MIN_GAP = 150
+export const BIRD_TELEGRAPH_SEC = 0.6
+export const BIRD_TELEGRAPH_BLINK_MS = 1000 / 3
+export const RUNNER_PTERO_FRAME_MS = 1000 / 6
+
+export const BIRD_SKY_Y = [8, 16, 24]

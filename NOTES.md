@@ -321,3 +321,58 @@
 - Add `test/runner/spawner.test.js`, `simulate.test.js`, `scoring.test.js`; package.json `"test": "node --test"` if not already present.
 - Tighten gap inflation when shift cap is 0 before roll; bot must wait `T_REACT` after clearing a row.
 - Optional: export pure helpers from spawner for gap/ceiling assertions in Node.
+
+## R4 — Director and tests (completed)
+
+### Built
+- `src/game/runner/difficulty.js` — `minGapForFairShiftZero()`; fairness uses constant `T_REACT` **0.2** and `FAIR_FRACTION` **0.9**.
+- `src/game/runner/spawner.js` — gap inflation before row roll, `shiftLocal` / `gapUsed` on rows, optional slow `gapCoefficient`, packed footprints (`STACK_OVERLAP_PX` **2**), exports `rowGap`, `verticalSeamsInRow`, `createRow`.
+- `src/game/runner/botSim.js` — 300 s survival bot (normal + slow speed tables) that waits `T_REACT` after each row clear; trace mode for react regression tests.
+- `src/game/runner/scoring.js` — `speedAtFrame`, `scoreFromDistance`, `stepRunScoringWithSpeed` (slow bot).
+- `src/game/runner/constants.js` — **`TRACK_BOTTOM` 136** (plan 84 px track); slow speed constants for tests only; `DESERT_COLOR` inlined (no `assetUrl` in Node tests).
+- `package.json` — `"test": "node --test"`.
+- `test/runner/scoring.test.js`, `test/runner/spawner.test.js`, `test/runner/simulate.test.js`.
+
+### Deviations
+- **`TRACK_BOTTOM` was 200 in R3** — corrected to **136** so track depth is **84** per plan (`y` 52–136). This tightens lane clamp and cactus packing vs the R3 browser build (worth re-checking play feel).
+- **Footprint count / ≤4 px seams** — plan’s full row layout assertions are not in CI; seeds **1** and **2** tests focus on fairness pairs, corridor ramp, ambition cap, and `clusterSize` vs `multipleSpeed`. Packing can still place fewer than `ceil(blocked/depth)` large rows in tight shifts (noted for R5/R7).
+- **Bot instant-move** — survival does not always differ at `reactDelaySec: 0`; regression uses `trace: true` (`reactViolations` / `earlyMovesAfterClear`) so removing the wait fails CI.
+- **Tests dropped from runner `constants.js`** — dropped re-export of `src/game/constants.js` to keep `node --test` off `assetUrl` / Vite `import.meta.env`.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/difficulty.js` | `T_REACT`, `FAIR_FRACTION`, `CORRIDOR_*`, `AMBITION_*`, `DINO_ALONG_SCROLL`, `minGapForFairShiftZero` |
+| `src/game/runner/spawner.js` | `STACK_OVERLAP_PX` (**2**), gap via `GAP_COEFFICIENT` / row `gapCoefficient` |
+| `src/game/runner/constants.js` | `TRACK_TOP`/`TRACK_BOTTOM`, `SLOW_SPEED_*`, `SLOW_GAP_COEFFICIENT` |
+| `src/game/runner/botSim.js` | `BOT_VISIBLE_W` (= `RUN_REF_W` **600**), default `reactDelaySec` = `T_REACT` |
+
+### For R5+
+- `verticalSeamsInRow` + tighter packing if birds need exact partial stacks and ≤4 px seams everywhere.
+- Slow mode UI (R6) should reuse `stepRunScoringWithSpeed` + `SLOW_GAP_COEFFICIENT` / `maybeSpawnRows({ gapCoefficient })`.
+- Re-verify runner lane clamp in browser after `TRACK_BOTTOM` **136** change.
+
+## R5 — Birds (completed)
+
+### Built
+- `src/game/runner/spawner.js` — `createBirdRow`, `shouldSpawnBird(seed, rowIndex, speed)` in `maybeSpawnRows` (**40%** at speed ≥ **8.5**); partial cactus stack with opening **`corridorLen + 12`**, ground **shadow** footprint (**46×12**), fairness on **safe-slot center**; ptero **minGap 150** for bird gaps.
+- `src/game/runner/constants.js` — bird tuning (`BIRD_*`, `RUNNER_PTERO_FRAME_MS`, sky altitudes `BIRD_SKY_Y`).
+- `src/game/runner/RunnerGame.js` — ink shadow oval, flapping pterodactyl in sky, **1 px** right-edge telegraph (**600 ms** lead, blink **1000/3 ms**), shadow collision.
+- `src/game/runner/botSim.js` — aims at `safeSlotCenterLocal` / shadow obstacles.
+- `test/runner/spawner.test.js` — bird layout, spawn gate, `maybeSpawnRows` integration; five-minute bot still passes with birds.
+
+### Deviations
+- **Bird spawn roll** uses a **hash of seed + row index**, not an extra `rng()` call, so R4 cactus sequences stay bit-identical until a bird row replaces one spawn.
+- **Ground shadow** is an ink **ellipse** (same approach as desert dino shadow), not a sprite — the sheet has no shadow crop (per main PLAN).
+- **`BIRD_SPAWN_CHANCE` 0.4** is not specified in PLAN-DINO-RUN; tune in `constants.js` if birds feel too sparse or dense.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `BIRD_MIN_SPEED`, `BIRD_SPAWN_CHANCE`, `BIRD_SHADOW_DEPTH/WIDTH`, `BIRD_MIN_GAP`, `BIRD_TELEGRAPH_SEC`, `BIRD_TELEGRAPH_BLINK_MS`, `RUNNER_PTERO_FRAME_MS`, `BIRD_SKY_Y` |
+| `src/game/runner/spawner.js` | `shouldSpawnBird` mix function |
+
+### For R6+
+- Telegraph and ptero flap respect `reduceMotion` (frozen); R6 reduced-motion note should mention telegraph freeze.
+- Touch vertical stick — bot already targets safe slot; human play must dodge shadow, not whole opening.
+- No audio on bird telegraph (visual-only per plan).

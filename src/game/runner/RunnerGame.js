@@ -1,4 +1,5 @@
 import { ATLAS, TREX_FRAME_OFFSET } from '../atlas.js'
+import { INK_COLOR } from '../constants.js'
 import {
   BLINK_DELAY_MAX_MS,
   BLINK_DELAY_MIN_MS,
@@ -45,6 +46,11 @@ import {
   GAMEOVER_CLEAR_MS,
   CACTUS_SMALL,
   CACTUS_LARGE,
+  BIRD_SHADOW_DEPTH,
+  BIRD_SHADOW_WIDTH,
+  BIRD_TELEGRAPH_BLINK_MS,
+  BIRD_TELEGRAPH_SEC,
+  RUNNER_PTERO_FRAME_MS,
 } from './constants.js'
 import {
   createRunScoring,
@@ -178,6 +184,8 @@ export class RunnerGame {
       runFrameIndex: 0,
       runAnimElapsed: 0,
     }
+    this.birdFrameIndex = 0
+    this.birdFrameElapsed = 0
     this._onFrame = this._onFrame.bind(this)
     this._onBlur = this._onBlur.bind(this)
     this._onFocus = this._onFocus.bind(this)
@@ -299,6 +307,14 @@ export class RunnerGame {
       const footX = row.worldX + row.rowWidth / 2
       for (const fp of row.footprints) {
         out.push({ footX, footY: fp.footY, w: fp.w, h: fp.h })
+      }
+      if (row.isBird && row.shadowFootY != null) {
+        out.push({
+          footX: row.worldX + BIRD_SHADOW_WIDTH / 2,
+          footY: row.shadowFootY,
+          w: BIRD_SHADOW_WIDTH,
+          h: BIRD_SHADOW_DEPTH,
+        })
       }
     }
     return out
@@ -477,6 +493,13 @@ export class RunnerGame {
       this.footY = motion.footY
       this.horizonX = (this.horizonX + scroll) % HORIZON_TILE_W
       this.updateClouds(dt, this.scoring.speed)
+      if (!this.reduceMotion) {
+        this.birdFrameElapsed += dt * 1000
+        while (this.birdFrameElapsed >= RUNNER_PTERO_FRAME_MS) {
+          this.birdFrameElapsed -= RUNNER_PTERO_FRAME_MS
+          this.birdFrameIndex = 1 - this.birdFrameIndex
+        }
+      }
 
       const cullBefore = this.cameraX - 120
       this.rows = this.rows.filter((row) => row.worldX + row.rowWidth >= cullBefore)
@@ -601,6 +624,7 @@ export class RunnerGame {
     ctx.fillStyle = DESERT_COLOR
     ctx.fillRect(0, TRACK_TOP, w, TRACK_BOTTOM - TRACK_TOP)
 
+    this.drawBirdTelegraphs(ctx, w)
     this.drawRowsAndDino(ctx)
 
     const showScore = scoreDrawVisible(this.scoring, performance.now())
@@ -614,6 +638,36 @@ export class RunnerGame {
     }
 
     ctx.restore()
+  }
+
+  /** @param {CanvasRenderingContext2D} ctx @param {number} w */
+  drawBirdTelegraphs(ctx, w) {
+    if (this.phase !== 'playing' && this.phase !== 'paused') {
+      return
+    }
+    const speed = this.scoring.speed
+    if (speed < 8.5) {
+      return
+    }
+    const leadPx = speed * 60 * BIRD_TELEGRAPH_SEC
+    const now = performance.now()
+    const blinkOn =
+      Math.floor(now / BIRD_TELEGRAPH_BLINK_MS) % 2 === 0 && !this.reduceMotion
+    if (!blinkOn) {
+      return
+    }
+    for (const row of this.rows) {
+      if (!row.isBird || row.shadowFootY == null) {
+        continue
+      }
+      const screenLeft = row.worldX - this.cameraX
+      const pastRight = screenLeft - w
+      if (pastRight <= 0 || pastRight > leadPx) {
+        continue
+      }
+      ctx.fillStyle = INK_COLOR
+      ctx.fillRect(Math.round(w - 1), Math.round(row.shadowFootY - BIRD_SHADOW_DEPTH / 2), 1, 1)
+    }
   }
 
   drawRowsAndDino(ctx) {
@@ -634,11 +688,53 @@ export class RunnerGame {
           draw: () => this.drawRowFootprint(ctx, row, screenLeft, fp),
         })
       }
+      if (row.isBird && row.shadowFootY != null) {
+        layer.push({
+          footY: row.shadowFootY,
+          draw: () => this.drawBirdShadow(ctx, screenLeft, row),
+        })
+        layer.push({
+          footY: row.shadowFootY + BIRD_SHADOW_DEPTH,
+          draw: () => this.drawBirdSprite(ctx, screenLeft, row),
+        })
+      }
     }
     layer.sort((a, b) => a.footY - b.footY)
     for (const item of layer) {
       item.draw()
     }
+  }
+
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} screenLeft
+   * @param {import('./spawner.js').RunnerRow} row
+   */
+  drawBirdShadow(ctx, screenLeft, row) {
+    const x = Math.round(screenLeft + (row.rowWidth - BIRD_SHADOW_WIDTH) / 2)
+    const footY = row.shadowFootY
+    const w = BIRD_SHADOW_WIDTH
+    const h = BIRD_SHADOW_DEPTH
+    const y = Math.round(footY - h)
+    ctx.fillStyle = INK_COLOR
+    ctx.beginPath()
+    ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  /**
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} screenLeft
+   * @param {import('./spawner.js').RunnerRow} row
+   */
+  drawBirdSprite(ctx, screenLeft, row) {
+    const atlas =
+      this.birdFrameIndex === 0 ? ATLAS.pterodactyl : ATLAS.pterodactylFrame2
+    const { x: sx, y: sy, w, h } = atlas
+    const skyY = row.birdSkyY ?? 8
+    const drawX = Math.round(screenLeft + (row.rowWidth - w) / 2)
+    const drawY = skyY
+    ctx.drawImage(this.sprite, sx, sy, w, h, drawX, drawY, w, h)
   }
 
   /**

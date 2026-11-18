@@ -13,10 +13,10 @@ todos:
     status: completed
   - id: r4-tests
     content: "R4: Constant fairness ceiling, shift-ambition ramp, corridor ramp over score 0-1500, and node --test with a bot that waits T_REACT."
-    status: pending
+    status: completed
   - id: r5-birds
     content: "R5: Optional pterodactyl shadow hazards after speed 8.5, with a right-edge telegraph."
-    status: pending
+    status: completed
   - id: r6-a11y
     content: "R6: Vertical touch stick, audio toggle, slow mode with a separate HI, and focus/live-region behavior."
     status: pending

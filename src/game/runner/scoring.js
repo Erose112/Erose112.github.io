@@ -81,3 +81,43 @@ export function scoreDrawVisible(state, nowMs) {
   updateScoreFlash(state, nowMs)
   return state.flashOn
 }
+
+/** Chromium-style speed after n integrated 60fps frames (normal mode). */
+export function speedAtFrame(frames) {
+  return Math.min(SPEED_MAX, SPEED_START + SPEED_ACCEL * frames)
+}
+
+/** Score from accumulated scroll distance. */
+export function scoreFromDistance(distanceRan) {
+  return Math.round(Math.ceil(distanceRan) * SCORE_FACTOR)
+}
+
+/**
+ * @param {RunScoring} state
+ * @param {number} dt
+ * @param {{ start: number, max: number, accel: number }} speedCfg
+ */
+export function stepRunScoringWithSpeed(state, dt, speedCfg, integrate = true) {
+  if (!integrate) {
+    return
+  }
+  const frames = dt * 60
+  state.distanceRan += state.speed * frames
+  if (state.speed < speedCfg.max) {
+    state.speed += speedCfg.accel * frames
+  }
+  const nextScore = Math.min(
+    SCORE_MAX,
+    Math.round(Math.ceil(state.distanceRan) * SCORE_FACTOR),
+  )
+  if (nextScore !== state.score) {
+    state.score = nextScore
+    const hundred = Math.floor(nextScore / 100)
+    if (hundred > state.lastScoreHundred && nextScore % 100 === 0) {
+      state.lastScoreHundred = hundred
+      state.flashIterationsLeft = 3
+      state.flashOn = false
+      state.flashUntil = 0
+    }
+  }
+}

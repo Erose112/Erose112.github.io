@@ -51,3 +51,16 @@ export function corridorStartLocal(corridorLen, shiftLocal) {
   const maxStart = TRACK_DEPTH - corridorLen
   return Math.min(maxStart, Math.max(minStart, unshifted + shiftLocal))
 }
+
+/**
+ * Minimum scroll gap so |prevCenter - defaultCenter| is legal at shift 0.
+ * @param {number} prevCenter track-local corridor center
+ * @param {number} speed px per 60fps frame
+ */
+export function minGapForFairShiftZero(prevCenter, speed) {
+  const defaultCenter = TRACK_DEPTH / 2
+  const laneDelta = Math.abs(defaultCenter - prevCenter)
+  const freeTimeNeeded = (laneDelta / LANE_SPEED + T_REACT) / FAIR_FRACTION
+  const freePx = freeTimeNeeded * speed * 60
+  return Math.ceil(freePx + DINO_ALONG_SCROLL)
+}
