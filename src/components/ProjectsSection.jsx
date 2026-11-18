@@ -60,7 +60,7 @@ export default function ProjectsSection() {
                   alt={project.imageAlt}
                   loading="lazy"
                   decoding="async"
-                  className="mt-3 w-full aspect-video object-cover border-2 border-ink grayscale hover:grayscale-0 focus:grayscale-0"
+                  className="mt-3 w-full aspect-video object-cover border-2 border-ink"
                   style={{ objectPosition: project.imageObjectPosition }}
                 />
               </div>

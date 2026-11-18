@@ -8,9 +8,17 @@ const KNOB_TRAVEL = 40
  *   input: import('../game/input.js').GameInput | null,
  *   show: boolean,
  *   shouldPreventDefault: () => boolean,
+ *   axisLock?: 'plane' | 'vertical',
+ *   hideJump?: boolean,
  * }} props
  */
-export default function TouchControls({ input, show, shouldPreventDefault }) {
+export default function TouchControls({
+  input,
+  show,
+  shouldPreventDefault,
+  axisLock = 'plane',
+  hideJump = false,
+}) {
   const stickRef = useRef(/** @type {HTMLDivElement | null} */ (null))
   const knobRef = useRef(/** @type {HTMLDivElement | null} */ (null))
   const stickCenterRef = useRef({ x: 0, y: 0 })
@@ -31,6 +39,9 @@ export default function TouchControls({ input, show, shouldPreventDefault }) {
       }
       let nx = dx / KNOB_TRAVEL
       let ny = dy / KNOB_TRAVEL
+      if (axisLock === 'vertical') {
+        nx = 0
+      }
       const mag = Math.hypot(nx, ny)
       if (mag > 1) {
         nx /= mag
@@ -43,7 +54,7 @@ export default function TouchControls({ input, show, shouldPreventDefault }) {
         knobRef.current.style.transform = `translate(calc(-50% + ${clampedDx}px), calc(-50% + ${clampedDy}px))`
       }
     },
-    [input],
+    [input, axisLock],
   )
 
   const resetStick = useCallback(() => {
@@ -129,22 +140,24 @@ export default function TouchControls({ input, show, shouldPreventDefault }) {
           style={{ transform: 'translate(-50%, -50%)' }}
         />
       </div>
-      <button
-        type="button"
-        className="font-display pointer-events-auto absolute bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] h-28 min-w-28 border-2 border-ink bg-desert px-3 text-base text-ink touch-none hover:bg-ink hover:text-desert"
-        onPointerDown={onJumpDown}
-        onPointerUp={(e) => {
-          e.currentTarget.releasePointerCapture(e.pointerId)
-          input?.releaseTouchJump()
-        }}
-        onPointerCancel={(e) => {
-          e.currentTarget.releasePointerCapture(e.pointerId)
-          input?.releaseTouchJump()
-        }}
-        aria-label="Jump"
-      >
-        JUMP
-      </button>
+      {!hideJump ? (
+        <button
+          type="button"
+          className="font-display pointer-events-auto absolute bottom-[max(1.25rem,env(safe-area-inset-bottom,0px))] right-[max(1rem,env(safe-area-inset-right,0px))] h-28 min-w-28 border-2 border-ink bg-desert px-3 text-base text-ink touch-none hover:bg-ink hover:text-desert"
+          onPointerDown={onJumpDown}
+          onPointerUp={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId)
+            input?.releaseTouchJump()
+          }}
+          onPointerCancel={(e) => {
+            e.currentTarget.releasePointerCapture(e.pointerId)
+            input?.releaseTouchJump()
+          }}
+          aria-label="Jump"
+        >
+          JUMP
+        </button>
+      ) : null}
     </div>
   )
 }

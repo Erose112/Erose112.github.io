@@ -1,12 +1,20 @@
 # Ethan Rose — portfolio
 
-A React 19 + Vite personal site: a walkable Chrome offline dinosaur desert with portals into About, Experience, and Projects content. Skip **SKIP GAME** (or open `#plain`) for a scrollable plain page with the same copy.
+A React 19 + Vite personal site: walk a Chrome offline dinosaur desert, hop into About / Experience / Projects portals, or open a side-scrolling **Dino Run** mini-game. Prefer the content without the canvas? Use **SKIP GAME** or `#plain`.
 
-Sprites and reference game code from Chromium are credited in the plain-page footer and in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+| Mode | Hash |
+| --- | --- |
+| Desert overworld | `#world` |
+| Sections | `#about`, `#experience`, `#projects` |
+| Dino Run | `#dino-run` |
+| Plain page | `#plain` |
+
+Sprites, sounds, and Chromium reference excerpts are credited on the plain-page footer and in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). Build notes live under [`docs/`](docs/).
 
 ## Scripts
 
 - `npm run dev` — local development
 - `npm run build` — production build
+- `npm test` — Node unit tests (runner fairness / scoring)
 - `npm run lint` — ESLint
 - `npm run preview` — preview the production build

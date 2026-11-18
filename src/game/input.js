@@ -12,9 +12,28 @@ const MOVEMENT_CODES = new Set([
 const PREVENT_CODES = new Set([
   ...MOVEMENT_CODES,
   'Space',
+  'Enter',
 ])
 
+function isModalDialogOpen() {
+  return document.querySelector('dialog[open]') != null
+}
+
 const SQRT2 = Math.SQRT2
+
+/**
+ * @param {EventTarget | null} target
+ */
+function isNativeActivatable(target) {
+  if (!(target instanceof Element)) {
+    return false
+  }
+  const tag = target.tagName
+  if (tag === 'BUTTON' || tag === 'A' || tag === 'INPUT') {
+    return true
+  }
+  return target.getAttribute('role') === 'button'
+}
 
 /**
  * Keyboard and on-screen touch input for the desert loop.
@@ -25,7 +44,14 @@ export class GameInput {
     this.inputLocked = false
     this.jumpQueued = false
     this.jumpHeld = false
+    this.enterQueued = false
+    this.escapeQueued = false
+    this.muteQueued = false
+    this._ignoreJumpUntilRelease = false
     this.touchAxis = { x: 0, y: 0 }
+    this.runnerShortcutsActive = false
+    /** @type {'plane' | 'vertical'} */
+    this.axisMode = 'plane'
     this._shouldPrevent = () => true
     this._onKeyDown = this._onKeyDown.bind(this)
     this._onKeyUp = this._onKeyUp.bind(this)
@@ -50,6 +76,11 @@ export class GameInput {
     this.clearAll()
   }
 
+  /** @param {'plane' | 'vertical'} mode */
+  setAxisMode(mode) {
+    this.axisMode = mode
+  }
+
   setInputLocked(locked) {
     this.inputLocked = locked
     if (locked) {
@@ -58,10 +89,17 @@ export class GameInput {
     }
   }
 
+  setRunnerShortcutsActive(active) {
+    this.runnerShortcutsActive = active
+  }
+
   clearAll() {
     this.held.clear()
     this.jumpQueued = false
     this.jumpHeld = false
+    this.enterQueued = false
+    this.escapeQueued = false
+    this.muteQueued = false
     this.touchAxis = { x: 0, y: 0 }
   }
 
@@ -71,14 +109,24 @@ export class GameInput {
   }
 
   queueTouchJump() {
-    if (!this.inputLocked) {
-      this.jumpQueued = true
-      this.jumpHeld = true
+    if (this.inputLocked || this._ignoreJumpUntilRelease) {
+      return
+    }
+    this.jumpQueued = true
+    this.jumpHeld = true
+  }
+
+  /** Runner ready: drop queued jump; ignore held Space until release. */
+  clearJumpLatchForReady() {
+    this.jumpQueued = false
+    if (this.jumpHeld) {
+      this._ignoreJumpUntilRelease = true
     }
   }
 
   releaseTouchJump() {
     this.jumpHeld = false
+    this._ignoreJumpUntilRelease = false
   }
 
   /** @param {KeyboardEvent} e */
@@ -86,17 +134,46 @@ export class GameInput {
     if (e.repeat) {
       return
     }
-    if (this._shouldPrevent() && PREVENT_CODES.has(e.code)) {
+    const yieldToNative =
+      (e.code === 'Space' || e.code === 'Enter') && isNativeActivatable(e.target)
+    const canPrevent = this._shouldPrevent() && PREVENT_CODES.has(e.code) && !yieldToNative
+    if (e.code === 'Escape') {
+      if (!isModalDialogOpen() && this.runnerShortcutsActive) {
+        e.preventDefault()
+        this.escapeQueued = true
+      }
+      return
+    }
+    if (e.code === 'KeyM') {
+      if (this.runnerShortcutsActive && !isNativeActivatable(e.target)) {
+        e.preventDefault()
+        this.muteQueued = true
+      }
+      return
+    }
+    if (canPrevent) {
       e.preventDefault()
     }
+    if (e.code === 'Enter') {
+      if (!yieldToNative && !this.inputLocked) {
+        this.enterQueued = true
+      }
+      return
+    }
     if (e.code === 'Space') {
-      if (!this.inputLocked) {
+      if (yieldToNative) {
+        return
+      }
+      if (!this.inputLocked && !this._ignoreJumpUntilRelease) {
         this.jumpQueued = true
         this.jumpHeld = true
       }
       return
     }
     if (MOVEMENT_CODES.has(e.code)) {
+      if (isNativeActivatable(e.target)) {
+        return
+      }
       this.held.add(e.code)
     }
   }
@@ -105,6 +182,7 @@ export class GameInput {
   _onKeyUp(e) {
     if (e.code === 'Space') {
       this.jumpHeld = false
+      this._ignoreJumpUntilRelease = false
       return
     }
     this.held.delete(e.code)
@@ -156,10 +234,14 @@ export class GameInput {
       y /= SQRT2
     }
 
+    if (this.axisMode === 'vertical') {
+      x = 0
+    }
+
     const tx = this.touchAxis.x
     const ty = this.touchAxis.y
     if (tx !== 0 || ty !== 0) {
-      x += tx
+      x += this.axisMode === 'vertical' ? 0 : tx
       y += ty
       const mag = Math.hypot(x, y)
       if (mag > 1) {
@@ -177,6 +259,30 @@ export class GameInput {
       return false
     }
     this.jumpQueued = false
+    return true
+  }
+
+  consumeEnterEdge() {
+    if (this.inputLocked || !this.enterQueued) {
+      return false
+    }
+    this.enterQueued = false
+    return true
+  }
+
+  consumeEscapeEdge() {
+    if (!this.escapeQueued) {
+      return false
+    }
+    this.escapeQueued = false
+    return true
+  }
+
+  consumeMuteEdge() {
+    if (!this.muteQueued) {
+      return false
+    }
+    this.muteQueued = false
     return true
   }
 

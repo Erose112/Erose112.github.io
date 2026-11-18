@@ -10,6 +10,7 @@ const PORTAL_FOCUS_NAMES = {
   about: 'About',
   experience: 'Experience',
   projects: 'Projects',
+  dino: 'Dino Run',
 }
 
 /** @param {string} raw */
@@ -34,6 +35,9 @@ function readInitialShell() {
   if (body === 'plain') {
     return { mode: 'plain', section: null }
   }
+  if (body === 'dino-run') {
+    return { mode: 'runner', section: null }
+  }
   if (isSectionId(body)) {
     return { mode: 'section', section: body }
   }
@@ -53,11 +57,13 @@ export default function App() {
   const focusCanvasEpochRef = useRef(0)
   const modeRef = useRef(mode)
   const exitBusyRef = useRef(false)
-  const pendingSectionRef = useRef(/** @type {'about' | 'experience' | 'projects' | null} */ (null))
+  const pendingEnterRef = useRef(
+    /** @type {'about' | 'experience' | 'projects' | 'dino' | null} */ (null),
+  )
   const enteringFromHopRef = useRef(false)
   const pushedEntryRef = useRef(false)
   const lastReturnPortalRef = useRef(
-    /** @type {'about' | 'experience' | 'projects' | null} */ (null),
+    /** @type {'about' | 'experience' | 'projects' | 'dino' | null} */ (null),
   )
   const wipeTimerRef = useRef(0)
   const [exitAnnouncement, setExitAnnouncement] = useState('')
@@ -121,6 +127,25 @@ export default function App() {
     [focusWorldCanvas],
   )
 
+  const enterRunner = useCallback(
+    (fromHop) => {
+      const game = gameRef.current
+      closeSectionDialog()
+      game?.setLoopMode('runner')
+      game?.setInputLocked(false)
+      game?.clearTransitionFreeze()
+      if (!fromHop) {
+        game?.clearTransitionFreeze()
+      }
+      game?.startRunner()
+      setMode('runner')
+      setSection(null)
+      setWipe('none')
+      lastReturnPortalRef.current = 'dino'
+    },
+    [closeSectionDialog],
+  )
+
   const syncFromLocation = useCallback(() => {
     const body = hashBody(window.location.hash)
     const game = gameRef.current
@@ -135,52 +160,81 @@ export default function App() {
       return
     }
 
-    if (body === 'world' || !isSectionId(body)) {
+    if (body === 'dino-run') {
+      enterRunner(enteringFromHopRef.current)
+      pendingEnterRef.current = null
+      return
+    }
+
+    if (isSectionId(body)) {
+      lastReturnPortalRef.current = body
+      setSection(body)
+      setMode('section')
+      setVisited((prev) => {
+        if (prev.has(body)) {
+          return prev
+        }
+        const next = new Set(prev)
+        next.add(body)
+        return next
+      })
+      game?.setLoopMode('section')
+      if (!enteringFromHopRef.current) {
+        game?.clearTransitionFreeze()
+        game?.placeDinoAtReturn(body)
+      }
+      openSectionDialog()
+      setWipe('none')
+      return
+    }
+
+    if (body === 'world') {
       closeSectionDialog()
       const returnPortal = lastReturnPortalRef.current
       const announce =
         returnPortal &&
-        (modeRef.current === 'section' || modeRef.current === 'transition')
+        (modeRef.current === 'section' ||
+          modeRef.current === 'transition' ||
+          modeRef.current === 'runner')
           ? returnPortal
           : null
       applyWorld(returnPortal, announce)
       lastReturnPortalRef.current = null
-      pendingSectionRef.current = null
-      pushedEntryRef.current = false
+      pendingEnterRef.current = null
+      if (modeRef.current !== 'runner') {
+        pushedEntryRef.current = false
+      }
       return
     }
 
-    lastReturnPortalRef.current = body
-    setSection(body)
-    setMode('section')
-    setVisited((prev) => {
-      if (prev.has(body)) {
-        return prev
-      }
-      const next = new Set(prev)
-      next.add(body)
-      return next
-    })
-    game?.setLoopMode('section')
-    if (!enteringFromHopRef.current) {
-      game?.clearTransitionFreeze()
-      game?.placeDinoAtReturn(body)
-    }
-    openSectionDialog()
-    setWipe('none')
-  }, [applyWorld, closeSectionDialog, openSectionDialog])
+    closeSectionDialog()
+    const returnPortal = lastReturnPortalRef.current
+    const announce =
+      returnPortal &&
+      (modeRef.current === 'section' ||
+        modeRef.current === 'transition' ||
+        modeRef.current === 'runner')
+        ? returnPortal
+        : null
+    applyWorld(returnPortal, announce)
+    lastReturnPortalRef.current = null
+    pendingEnterRef.current = null
+    pushedEntryRef.current = false
+    window.history.replaceState(null, '', '#world')
+  }, [applyWorld, closeSectionDialog, enterRunner, openSectionDialog])
 
-  const completeSectionEnter = useCallback(() => {
-    const id = pendingSectionRef.current
+  const completeEnterAfterWipe = useCallback(() => {
+    const id = pendingEnterRef.current
     if (!id) {
       return
     }
     enteringFromHopRef.current = true
     pushedEntryRef.current = true
-    window.history.pushState(null, '', `#${id}`)
+    const hash = id === 'dino' ? 'dino-run' : id
+    window.history.pushState(null, '', `#${hash}`)
     syncFromLocation()
     enteringFromHopRef.current = false
-    pendingSectionRef.current = null
+    pendingEnterRef.current = null
   }, [syncFromLocation])
 
   const handleEnterApex = useCallback(() => {
@@ -191,30 +245,27 @@ export default function App() {
   const scheduleEnterAfterWipe = useCallback(() => {
     clearWipeTimer()
     if (reduceMotion) {
-      completeSectionEnter()
+      completeEnterAfterWipe()
       return
     }
     setWipe('enter')
     wipeTimerRef.current = window.setTimeout(() => {
       wipeTimerRef.current = 0
-      completeSectionEnter()
+      completeEnterAfterWipe()
     }, WIPE_MS)
-  }, [clearWipeTimer, completeSectionEnter, reduceMotion])
+  }, [clearWipeTimer, completeEnterAfterWipe, reduceMotion])
 
-  const handlePortalEnter = useCallback(
-    (id, game) => {
-      if (modeRef.current !== 'world') {
-        return
-      }
-      pendingSectionRef.current = id
-      lastReturnPortalRef.current = id
-      game.setLoopMode('transition')
-      game.setInputLocked(true)
-      game.beginEnterTransition()
-      setMode('transition')
-    },
-    [],
-  )
+  const handlePortalEnter = useCallback((id, game) => {
+    if (modeRef.current !== 'world') {
+      return
+    }
+    pendingEnterRef.current = id
+    lastReturnPortalRef.current = id
+    game.setLoopMode('transition')
+    game.setInputLocked(true)
+    game.beginEnterTransition()
+    setMode('transition')
+  }, [])
 
   const registerApexHandler = useCallback(
     (game) => {
@@ -235,7 +286,7 @@ export default function App() {
     [registerApexHandler, syncFromLocation],
   )
 
-  const navigateToWorldFromSection = useCallback(() => {
+  const navigateToWorldFromPushedEntry = useCallback(() => {
     if (pushedEntryRef.current) {
       pushedEntryRef.current = false
       window.history.back()
@@ -265,13 +316,18 @@ export default function App() {
 
     clearWipeTimer()
     const finish = () => {
-      navigateToWorldFromSection()
+      navigateToWorldFromPushedEntry()
       exitBusyRef.current = false
     }
 
     setWipe('none')
     finish()
-  }, [clearWipeTimer, navigateToWorldFromSection])
+  }, [clearWipeTimer, navigateToWorldFromPushedEntry])
+
+  const handleRunnerBack = useCallback(() => {
+    lastReturnPortalRef.current = 'dino'
+    navigateToWorldFromPushedEntry()
+  }, [navigateToWorldFromPushedEntry])
 
   useEffect(() => {
     const onNav = () => syncFromLocation()
@@ -317,6 +373,7 @@ export default function App() {
           exitAnnouncement={exitAnnouncement}
           onGameReady={handleGameReady}
           onPortalEnter={handlePortalEnter}
+          onRunnerBack={handleRunnerBack}
         />
       ) : null}
       {mode === 'plain' ? <PlainPage onPlayGame={handlePlayGame} /> : null}

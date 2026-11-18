@@ -227,3 +227,208 @@
 - **Cloud fill** is runtime (`buildCloudSprite`), not baked into `100-offline-sprite.png`; sheet outline stays hollow for Chromium fidelity.
 - **Cloud draw order** is layer-hard (cactus behind clouds; clouds behind dino/ptero). Dino vs cactus still y-sorts by foot y.
 - **Section backdrop** uses CSS checkerboard + desert tint rather than sampling the live canvas bitmap (canvas remains visible underneath transparent dialog root).
+
+## R1 — Gate and routing (completed)
+
+### Built
+- `src/game/constants.js` — `WORLD_HEIGHT` **780**, `GROUND_NORTH_BOTTOM` **540**, `GROUND_BOTTOM` **760**, `DINO_RUN_PORTAL_DEF` at **(480, 660)**, `path: false` on section defs.
+- `src/game/entities.js` — fourth gate (posts only, no flanks), decorative gate pterodactyl, opening horizon strip, return **(480, 588)** (`y - 72`).
+- `src/game/ground.js` / `src/game/props.js` — north band unchanged seed/counts; south fill `WORLD_SEED + 11`; spawn path dots skip `path: false`.
+- `src/game/runner/RunnerGame.js` — ready stub (desert fill + own rAF); `src/game/runner/storage.js` — read HI for gate label.
+- `src/game/Game.js` — `loopMode: 'runner'`, `startRunner()` / `stopRunner()`, resize forward.
+- `src/game/input.js` — `clearJumpLatchForReady()` for later Space latch.
+- `src/App.jsx` — `mode: 'runner'`, `#dino-run` before unknown-hash fallback, hop+wipe enter, Back/Esc + `history.back()` / `replaceState(#world)`.
+- `src/components/World.jsx` — `DINO RUN` + HI label (`portal-label--dino`, not visited), runner overlay hook, dino proximity copy.
+- `src/components/RunnerOverlay.jsx` — **BACK TO WORLD**.
+
+### Deviations
+- **Runner overlay in `World.jsx`**, not a sibling in `App.jsx`, so it shares the world shell z-index with the canvas.
+- **South prop count** rolled as **6–10** extra plants (not specified in plan; keeps density light until R7).
+- **Gate ptero bob period** ~**2.4 s** (visual only; plan gives ±**18 px** amplitude via `DINO_GATE_PTERO_BOB_PX`).
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/constants.js` | `WORLD_HEIGHT`, `GROUND_NORTH_BOTTOM`, `GROUND_BOTTOM`, `DINO_RUN_PORTAL_DEF`, `DINO_GATE_PTERO_BOB_PX`, `PORTAL_DEFS[].path` |
+| `src/game/ground.js` | South band slice/pebble/tuft/dune counts (inline `paintGroundBand` calls) |
+| `src/game/props.js` | South `southTarget` **6–10** |
+| `src/game/runner/storage.js` | `HI_KEY` (`ethan-rose.dinoRun.hi`) |
+
+### For R2+
+- `RunnerGame` is a blank canvas; R2 adds scale, letterbox, horizon, clouds, movement, HUD, pause — keep handoff via `Game.startRunner()` / `stopRunner()`.
+- Jump latch already on `GameInput.clearJumpLatchForReady()` — call stays in `RunnerGame.enterReady()`.
+- Dino gate DOM label uses `formatHiLabel(readHiScore())`; R3 writes `.hi` and should refresh label on return to world (`World` already re-reads on `mode === 'world'`).
+- `App` Escape while `mode === 'runner'` exits to desert; R6 extends Escape for pause/play.
+- Do not add `'dino'` to `visited` or section path dots.
+
+## R2 — Runner core (completed)
+
+### Built
+- `src/game/clock.js` — shared `frameDelta` clamped to **0.05 s**.
+- `src/game/runner/constants.js` — playfield **180**, track **52–136**, runner scale `S_run`, dino x clamp, speed constants.
+- `src/game/runner/scoring.js` — `distanceRan`, score `round(ceil(distance)*0.025)`, speed ramp, 100-point flash timing (visual only).
+- `src/game/runner/RunnerGame.js` — ready / playing / paused, letterbox, horizon tile scroll, filled clouds, vertical lane movement, sprite HUD (`HI` + digits), blink/run anim, pause on hide/blur/resize.
+- `src/game/input.js` — `setAxisMode('vertical'|'plane')` for runner up/down.
+- `src/game/Game.js` — runner owns canvas scale while active; `stopRunner()` restores desert scale; keyboard `preventDefault` when runner wants keys.
+- `src/components/RunnerOverlay.jsx` — **PRESS SPACE TO START** / **TAP TO START**, **PAUSED** cue.
+- `src/components/World.jsx` — runner aria-label, overlay phase poll, coarse tap-to-start on canvas.
+
+### Deviations
+- **Hide/tab resume:** After `visibilitychange` back to visible (or window `focus`), a pause from blur/hidden auto-resumes with `lastTime` reset so score does not spike—R6 may replace this with an explicit Resume control.
+- **Orientation resize pause:** Resumes on the next **Space** edge (no Resume button until R6).
+- **Touch movement:** Vertical stick deferred to R6; tap-to-start uses `queueTouchJump()` on coarse pointers only.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `PLAYFIELD_H`, `TRACK_*`, `LANE_SPEED`, `computeRunnerScale`, `RUN_REF_W` (600), `dinoScreenX`, `SPEED_*`, cloud band/gaps, HUD glyph crops |
+| `src/game/runner/scoring.js` | score factor **0.025**, `SPEED_START/MAX/ACCEL` |
+| `src/game/clock.js` | `MAX_FRAME_DT` |
+
+### For R3+
+- `cameraX` / `runningTime` exist for scroll and `clearTime` gating; add spawner rows and `simulate.js` collision.
+- HI on HUD is read-only via `readHiScore()`; write on crash and refresh gate label on desert return.
+- `phase === 'over'` not used yet; crash frame offset **220**, game-over crop, Restart DOM (R3).
+- Cacti draw uses footprint sort by foot y inside the track band.
+
+## R3 — Rows, death, HI (completed)
+
+### Built
+- `src/game/runner/difficulty.js` — corridor ramp **46→28**, shift ambition **0.25→1**, fairness cap from `gap - 28` at `T_REACT` / fair **0.9**.
+- `src/game/runner/spawner.js` — rows after `CLEAR_TIME_MS` **3000**, Chromium gap formula, one-corridor footprint stacks (`ceil(blocked / footprintDepth)`), cluster size / duplication cap **2**, spawn fill ahead of `cameraX + visibleW`.
+- `src/game/runner/simulate.js` — sub-steps **≤ 1/120 s**, inset dino box **2 px**/side, combined lane + scroll motion per frame.
+- `src/game/runner/RunnerGame.js` — `over` phase, cactus y-sort draw, crash frame **220**, GAME OVER crop, Enter / Space (**1200 ms**) restart, immediate restart from DOM button + fresh run without ready.
+- `src/game/runner/storage.js` — `writeHiScore()` → `ethan-rose.dinoRun.hi`.
+- `src/game/input.js` — `Enter` edge, Space/Enter yield to focused buttons/links.
+- `src/components/RunnerOverlay.jsx` — restart crop button beside **BACK TO WORLD** on game over; focus on crash.
+- `src/components/World.jsx` / `src/game/Game.js` — restart handler, `onRunnerGameOver` focus hook.
+
+### Deviations
+- **R4 tests not added** — per milestone scope; spawner still applies ambition + cap math so R4 can assert seeds without rework.
+- **Cactus draw** — full cluster sprite drawn at each footprint depth (same column x); collision uses per-footprint boxes only.
+- **Gap bump when cap is 0** — if `fairShiftCapPx` is 0, row creation recenters corridor at shift 0 but does not yet widen `pendingGap` in-place (R4 fairness loop can extend `maybeSpawnRows`).
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `CLEAR_TIME_MS`, `GAMEOVER_CLEAR_MS`, `GAP_COEFFICIENT`, `MAX_GAP_COEFFICIENT`, `MAX_CLUSTER_SIZE`, `MAX_TYPE_STREAK`, `MAX_SEAM_PX`, `MIN_PASS_CORRIDOR_PX`, `CACTUS_SMALL` / `CACTUS_LARGE`, `GAME_OVER_SRC`, `TREX_CRASH_OFFSET` |
+| `src/game/runner/difficulty.js` | `T_REACT`, `FAIR_FRACTION`, `CORRIDOR_*`, `AMBITION_*`, `DINO_ALONG_SCROLL` |
+| `src/game/runner/simulate.js` | `MAX_SUBSTEP_SEC`, `HIT_INSET_PX` |
+| `src/game/runner/spawner.js` | gap via `rowGap()` / `CACTUS_*.minGap` |
+| `src/game/runner/storage.js` | `HI_KEY` |
+
+### For R4+
+- Add `test/runner/spawner.test.js`, `simulate.test.js`, `scoring.test.js`; package.json `"test": "node --test"` if not already present.
+- Tighten gap inflation when shift cap is 0 before roll; bot must wait `T_REACT` after clearing a row.
+- Optional: export pure helpers from spawner for gap/ceiling assertions in Node.
+
+## R4 — Director and tests (completed)
+
+### Built
+- `src/game/runner/difficulty.js` — `minGapForFairShiftZero()`; fairness uses constant `T_REACT` **0.2** and `FAIR_FRACTION` **0.9**.
+- `src/game/runner/spawner.js` — gap inflation before row roll, `shiftLocal` / `gapUsed` on rows, optional slow `gapCoefficient`, packed footprints (`STACK_OVERLAP_PX` **2**), exports `rowGap`, `verticalSeamsInRow`, `createRow`.
+- `src/game/runner/botSim.js` — 300 s survival bot (normal + slow speed tables) that waits `T_REACT` after each row clear; trace mode for react regression tests.
+- `src/game/runner/scoring.js` — `speedAtFrame`, `scoreFromDistance`, `stepRunScoringWithSpeed` (slow bot).
+- `src/game/runner/constants.js` — **`TRACK_BOTTOM` 136** (plan 84 px track); slow speed constants for tests only; `DESERT_COLOR` inlined (no `assetUrl` in Node tests).
+- `package.json` — `"test": "node --test"`.
+- `test/runner/scoring.test.js`, `test/runner/spawner.test.js`, `test/runner/simulate.test.js`.
+
+### Deviations
+- **`TRACK_BOTTOM` was 200 in R3** — corrected to **136** so track depth is **84** per plan (`y` 52–136). This tightens lane clamp and cactus packing vs the R3 browser build (worth re-checking play feel).
+- **Footprint count / ≤4 px seams** — plan’s full row layout assertions are not in CI; seeds **1** and **2** tests focus on fairness pairs, corridor ramp, ambition cap, and `clusterSize` vs `multipleSpeed`. Packing can still place fewer than `ceil(blocked/depth)` large rows in tight shifts (noted for R5/R7).
+- **Bot instant-move** — survival does not always differ at `reactDelaySec: 0`; regression uses `trace: true` (`reactViolations` / `earlyMovesAfterClear`) so removing the wait fails CI.
+- **Tests dropped from runner `constants.js`** — dropped re-export of `src/game/constants.js` to keep `node --test` off `assetUrl` / Vite `import.meta.env`.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/difficulty.js` | `T_REACT`, `FAIR_FRACTION`, `CORRIDOR_*`, `AMBITION_*`, `DINO_ALONG_SCROLL`, `minGapForFairShiftZero` |
+| `src/game/runner/spawner.js` | `STACK_OVERLAP_PX` (**2**), gap via `GAP_COEFFICIENT` / row `gapCoefficient` |
+| `src/game/runner/constants.js` | `TRACK_TOP`/`TRACK_BOTTOM`, `SLOW_SPEED_*`, `SLOW_GAP_COEFFICIENT` |
+| `src/game/runner/botSim.js` | `BOT_VISIBLE_W` (= `RUN_REF_W` **600**), default `reactDelaySec` = `T_REACT` |
+
+### For R5+
+- `verticalSeamsInRow` + tighter packing if birds need exact partial stacks and ≤4 px seams everywhere.
+- Slow mode UI (R6) should reuse `stepRunScoringWithSpeed` + `SLOW_GAP_COEFFICIENT` / `maybeSpawnRows({ gapCoefficient })`.
+- Re-verify runner lane clamp in browser after `TRACK_BOTTOM` **136** change.
+
+## R5 — Birds (completed)
+
+### Built
+- `src/game/runner/spawner.js` — `createBirdRow`, `shouldSpawnBird(seed, rowIndex, speed)` in `maybeSpawnRows` (**40%** at speed ≥ **8.5**); partial cactus stack with opening **`corridorLen + 12`**, ground **shadow** footprint (**46×12**), fairness on **safe-slot center**; ptero **minGap 150** for bird gaps.
+- `src/game/runner/constants.js` — bird tuning (`BIRD_*`, `RUNNER_PTERO_FRAME_MS`, sky altitudes `BIRD_SKY_Y`).
+- `src/game/runner/RunnerGame.js` — ink shadow oval, flapping pterodactyl in sky, **1 px** right-edge telegraph (**600 ms** lead, blink **1000/3 ms**), shadow collision.
+- `src/game/runner/botSim.js` — aims at `safeSlotCenterLocal` / shadow obstacles.
+- `test/runner/spawner.test.js` — bird layout, spawn gate, `maybeSpawnRows` integration; five-minute bot still passes with birds.
+
+### Deviations
+- **Bird spawn roll** uses a **hash of seed + row index**, not an extra `rng()` call, so R4 cactus sequences stay bit-identical until a bird row replaces one spawn.
+- **Ground shadow** is an ink **ellipse** (same approach as desert dino shadow), not a sprite — the sheet has no shadow crop (per main PLAN).
+- **`BIRD_SPAWN_CHANCE` 0.4** is not specified in PLAN-DINO-RUN; tune in `constants.js` if birds feel too sparse or dense.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `BIRD_MIN_SPEED`, `BIRD_SPAWN_CHANCE`, `BIRD_SHADOW_DEPTH/WIDTH`, `BIRD_MIN_GAP`, `BIRD_TELEGRAPH_SEC`, `BIRD_TELEGRAPH_BLINK_MS`, `RUNNER_PTERO_FRAME_MS`, `BIRD_SKY_Y` |
+| `src/game/runner/spawner.js` | `shouldSpawnBird` mix function |
+
+### For R6+
+- Telegraph and ptero flap respect `reduceMotion` (frozen); R6 reduced-motion note should mention telegraph freeze.
+- Touch vertical stick — bot already targets safe slot; human play must dodge shadow, not whole opening.
+- No audio on bird telegraph (visual-only per plan).
+
+## R6 — Touch, audio, slow mode, focus (completed)
+
+### Built
+- `src/game/runner/audio.js` — `RunnerAudio` with `button-press`, `hit`, `score-reached` (muted default, unlock on gesture, `play()` swallows errors).
+- `src/game/runner/storage.js` — `hiSlow`, `muted`, `slow` keys + memory fallbacks; gate label reads `.hi` only via `readHiScore()`.
+- `src/game/input.js` — `Escape` / `KeyM` edges, `setRunnerShortcutsActive`, Escape yields to `dialog[open]`; `wantsRunnerPreventDefault` path in `Game.js`.
+- `src/game/runner/RunnerGame.js` — Esc pause/resume/exit, explicit Resume (no blur auto-resume), slow ramp (`SLOW_SPEED_*`, `SLOW_GAP_COEFFICIENT` **0.6**), separate `writeHiSlowScore`, live `onAnnounce`, sfx hooks.
+- `src/components/TouchControls.jsx` — `axisLock="vertical"`, `hideJump` in runner.
+- `src/components/RunnerOverlay.jsx` — Resume, mute, slow toggle, reduced-motion dismissible note, runner controls top-safe-area.
+- `src/components/World.jsx` — runner touch, `aria-live` runner status, dynamic canvas `aria-label`, dino gate **HI** line, mute/slow UI state.
+
+### Deviations
+- **R3 restart spin** on `RunnerRestartButton` left as-is (8-frame spin); plan R3 preferred frame 0 only — not reworked in R6.
+- **Slow toggle while paused** updates HUD HI and persisted `slow` but does not swap the in-flight speed table until **ready** or **restart** (avoids mid-run inconsistent ramp).
+- **Muted announcement** on M-toggle speaks “Sound on/off” via the same live region as run events.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `SLOW_SPEED_START` **4.2**, `SLOW_SPEED_MAX` **9**, `SLOW_SPEED_ACCEL` **0.0005**, `SLOW_GAP_COEFFICIENT` **0.6** |
+| `src/game/runner/storage.js` | `HI_KEY`, `HI_SLOW_KEY`, `MUTED_KEY`, `SLOW_KEY` |
+| `src/components/TouchControls.jsx` | `axisLock`, `hideJump`, `JOYSTICK_DEADZONE` (parent) |
+
+### For R7+
+- Crop/dpr audit on runner HUD and game-over strip; confirm restart strip offsets on screen.
+- `THIRD_PARTY_NOTICES.md` — mark sounds as in use and list runner atlas crops.
+- North desert ground/props regression check after south-band work (R1).
+
+## R7 — Polish and credit (completed)
+
+### Built
+- `src/game/atlas.js` — `textSprite` (digits, HI, GAME OVER), `TREX_FRAME_OFFSET.crash`, `runnerDigitSrc()`, `cactusClusterSrc()`; `HORIZON_SOURCE_Y` lives here (re-exported from `constants.js`).
+- `src/game/runner/constants.js` — HUD / game-over / crash offsets sourced from `atlas.js`.
+- `src/game/runner/RunnerGame.js` — HUD and cluster draws use atlas helpers.
+- `src/game/constants.js` — named south-band ground/prop density (`SOUTH_*`); north still uses `WORLD_SEED+1` / `+7` with unchanged ranges.
+- `src/components/RunnerOverlay.jsx` — restart button **frame 0 only** (same crisp `36N×32N` path as `ExitButton.jsx`).
+- `THIRD_PARTY_NOTICES.md` — full crop table aligned with `atlas.js` (digits, HI, GAME OVER, restart, clusters, ptero, cloud, horizon, dino frames, sounds).
+- `test/runner/atlas.test.js` — cluster and digit rect regression for CI.
+
+### Deviations
+- **`HORIZON_SOURCE_Y` moved to `atlas.js`** so Node tests can import atlas without loading Vite `assetUrl` via `constants.js`. Value stays **52**; `constants.js` re-exports.
+- **Runner restart spin removed** in R7 (plan frame 0 only); R6 had left the 8-frame strip spinning.
+- **South prop density** unchanged at **6–10**; R7 only names constants (no layout change vs R1).
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/atlas.js` | `HORIZON_SOURCE_Y`, `ATLAS.textSprite.*`, `TREX_FRAME_OFFSET`, cluster via `cactusClusterSrc` |
+| `src/game/constants.js` | `SOUTH_PROP_COUNT_*`, `SOUTH_GROUND_SLICE_*`, `SOUTH_GROUND_PEBBLE_*`, `SOUTH_GROUND_TUFT_*`, `SOUTH_GROUND_DUNE_*` |
+| `src/game/scale.js` | `computeScale`, `restartSpriteMultiple` (dpr **1.25** → N **3**, **1.5** → N **3**) |
+| `src/game/runner/constants.js` | `computeRunnerScale`, digit/HUD fields mirrored from atlas |
+
+### For post-R7
+- All PLAN-DINO-RUN milestones through R7 are complete; optional follow-ups in plan §11 (jump dodge, ready-on-restart, visible HI n/3, night invert, audio files on disk) remain product choices, not blockers.
+- Visual dpr **1.25** / **1.5** checks are browser-only (integer `S` and restart crop sizing).

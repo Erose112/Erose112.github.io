@@ -130,11 +130,10 @@ export const projectsSection = {
     {
       title: 'HAVOC',
       links: [
-        { label: 'Website', href: 'https://www.qret.ca/' },
+        { label: 'Code', href: 'https://github.com/Erose112/ctl-havoc' },
       ],
-      note: 'HAVOC is private. Happy to walk through it.',
       tech: ['Docker', 'Go', 'Network Fault Simulation'],
-      imageSrc: assetUrl('qret-image.png'),
+      imageSrc: assetUrl('qret-image.webp'),
       imageAlt: 'Queen’s Rocket Engineering Team',
       imageObjectPosition: 'center',
       description: `Currently working on a fault injection tool for the Queen’s Rocket Engineering Team launch control stack. The launch control stack is a distributed system. The control server, MediaMTX, and network each have failure boundaries. I’m building a fault-injection tool to see how the stack fails and whether it recovers cleanly. I previously redid their website.`,
