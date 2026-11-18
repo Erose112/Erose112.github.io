@@ -30,7 +30,7 @@ isProject: false
 
 ## 1. Approach
 
-Confirmed stack: plain JS React 19 (`src/App.jsx`, `src/main.jsx`), Vite 8, Tailwind **v4.3.5** via `@tailwindcss/vite`. There is no `tailwind.config.js`. Theme tokens go in [`src/index.css`](src/index.css) with `@theme`. The only app code today is [`src/App.jsx`](src/App.jsx) (content, `LogoMarquee`, `ExpandableDescription`) plus a marquee keyframe. [`reference/dino_game/`](../reference/dino_game) stays read-only and is never imported.
+Confirmed stack: plain JS React 19 (`src/App.jsx`, `src/main.jsx`), Vite 8, Tailwind **v4.3.5** via `@tailwindcss/vite`. There is no `tailwind.config.js`. Theme tokens go in [`src/index.css`](../src/index.css) with `@theme`. The only app code today is [`src/App.jsx`](../src/App.jsx) (content, `LogoMarquee`, `ExpandableDescription`) plus a marquee keyframe. [`reference/dino_game/`](../reference/dino_game) stays read-only and is never imported.
 
 **Renderer: Canvas 2D, no Phaser or Kaplay.** The world is one 1x sprite sheet, a camera, and a few dozen `drawImage` calls. Canvas 2D matches how Chromium draws this game, keeps `imageSmoothingEnabled = false`, and adds no dependency. DOM sprites fight integer camera scrolling. A game library would own the loop and duplicate React.
 
@@ -40,8 +40,8 @@ Confirmed stack: plain JS React 19 (`src/App.jsx`, `src/main.jsx`), Vite 8, Tail
 - World stays the day palette. Section screens use the inverted night palette, so the enter wipe reads as the game's night flip. Logos sit on a `#f7f7f7` tile and stay grayscale, with no invert.
 - Portal names are Press Start 2P in the DOM. The sprite sheet has digits, `HI`, and `GAME OVER` only. It cannot spell About, Experience, or Projects.
 - Body copy is VT323. Press Start 2P is titles, labels, HUD, and buttons only, at multiples of 8px and at least 16px.
-- The renderer uses [`public/sprites/100-offline-sprite.png`](public/sprites/100-offline-sprite.png) only. Scale is one integer device-pixel factor `S`. The buffer is the full `innerWidth * dpr` by `innerHeight * dpr`, and `ctx.scale(S, S)` is the only transform scale.
-- Jump physics use `normalJumpConfig` from [`reference/dino_game/trex.ts`](reference/dino_game/trex.ts) on a fake `z`. A held jump peaks around **90** game pixels (Chromium's rounded sim crests at 88–91; float integration of the loop below crests near 94). The old 68px figure is where `y < maxJumpHeight` fires, not the peak.
+- The renderer uses [`public/sprites/100-offline-sprite.png`](../public/sprites/100-offline-sprite.png) only. Scale is one integer device-pixel factor `S`. The buffer is the full `innerWidth * dpr` by `innerHeight * dpr`, and `ctx.scale(S, S)` is the only transform scale.
+- Jump physics use `normalJumpConfig` from [`reference/dino_game/trex.ts`](../reference/dino_game/trex.ts) on a fake `z`. A held jump peaks around **90** game pixels (Chromium's rounded sim crests at 88–91; float integration of the loop below crests near 94). The old 68px figure is where `y < maxJumpHeight` fires, not the peak.
 - Nothing is lethal. Cactus posts block with small base footprints. The gate opening is a non-solid trigger. Canvas sprites y-sort by foot y. DOM labels sit above the canvas and do not interleave with those pixels.
 - The loop runs for `world` and `transition`. It pauses for `section`, `plain`, and a hidden tab. An internal `inputLocked` flag, not a paused loop, freezes control during the hop and wipe.
 - The hash is the only mode source. `syncFromLocation()` runs on load, `popstate`, and `hashchange`, so Back and Forward share one path. The dialog `close` event is the exit signal, and exit is idempotent.
@@ -156,7 +156,7 @@ A fixed 70% of a 195px view is 136.5, short of the ~141px the hop needs, and a l
 
 **Footprint.** 28 by 12 AABB on the feet (bottom center of the 44 by 47 sprite). This is the dino's collision body. The side-view sprite does not collide with its full rectangle. `z` does not move the footprint.
 
-**Jump, from [`trex.ts`](reference/dino_game/trex.ts) `normalJumpConfig`.** Per 60fps frame: `initialJumpVelocity = 10`, `gravity = 0.6`, `minJumpHeight = 30`, `dropVelocity = 5`. Integrate with `frames = dt * 60`, and keep physics in floats. Round only at draw time.
+**Jump, from [`trex.ts`](../reference/dino_game/trex.ts) `normalJumpConfig`.** Per 60fps frame: `initialJumpVelocity = 10`, `gravity = 0.6`, `minJumpHeight = 30`, `dropVelocity = 5`. Integrate with `frames = dt * 60`, and keep physics in floats. Round only at draw time.
 
 ```
 on jump edge, if z === 0:
@@ -194,14 +194,14 @@ Flip with `scale(-1, 1)` around the sprite center when facing left.
 
 ## 5. Rendering and atlas
 
-Use the 1x sheet only. Preload [`public/sprites/100-offline-sprite.png`](public/sprites/100-offline-sprite.png) from [`index.html`](index.html). Start the loop after `img.decode()`. Do not switch on the 2x sheet. `getContext('2d', { alpha: false })`. Dest sizes are ldpi game pixels. Source rects are the ldpi atlas, unmultiplied.
+Use the 1x sheet only. Preload [`public/sprites/100-offline-sprite.png`](../public/sprites/100-offline-sprite.png) from [`index.html`](../index.html). Start the loop after `img.decode()`. Do not switch on the 2x sheet. `getContext('2d', { alpha: false })`. Dest sizes are ldpi game pixels. Source rects are the ldpi atlas, unmultiplied.
 
-Atlas numbers come from [`offline_sprite_definitions.ts`](reference/dino_game/offline_sprite_definitions.ts), [`trex.ts`](reference/dino_game/trex.ts), and [`game_over_panel.ts`](reference/dino_game/game_over_panel.ts).
+Atlas numbers come from [`offline_sprite_definitions.ts`](../reference/dino_game/offline_sprite_definitions.ts), [`trex.ts`](../reference/dino_game/trex.ts), and [`game_over_panel.ts`](../reference/dino_game/game_over_panel.ts).
 
 **1x atlas.**
 - T-Rex origin `(848, 2)`, frame size 44 by 47, offsets above
 - Cloud `(86, 2)`, 46 by 14. Drift at `0.5 * 60 = 30` px/s in the sky band. About 4 clouds.
-- Horizon `(2, 54)`, 600 by 12. Tile across the ground every 56px vertically. [`horizon_line.ts`](reference/dino_game/horizon_line.ts) uses `sourceY: 52`. If the y=54 crop clips the bumps, use 52. Check this on the first canvas milestone.
+- Horizon `(2, 54)`, 600 by 12. Tile across the ground every 56px vertically. [`horizon_line.ts`](../reference/dino_game/horizon_line.ts) uses `sourceY: 52`. If the y=54 crop clips the bumps, use 52. Check this on the first canvas milestone.
 - Large cactus `(332, 2)`, 25 by 50. Small cactus `(228, 2)`, 17 by 35. Use the single-plant crop only. Colliders are the base footprints in section 4, not these rects.
 - Restart `(2, 68)`, 36 by 32. Frame 0 is the crop the exit button uses. The reference lists later x offsets `36, 72, 108, 144, 180, 216, 252`. Those offsets are unverified until the frame-0 crop is on screen and the strip is checked. Do not build the spin from them before that.
 - Pterodactyl `(134, 2)`, 46 by 40, two frames at `1000/6` ms. Optional milestone only.
@@ -218,7 +218,7 @@ Portal labels, the Space cue, and the HUD are DOM nodes above the canvas. The ga
 
 ## 6. Content mapping
 
-Move every string out of [`src/App.jsx`](src/App.jsx) into `src/content.js` unchanged, including apostrophe characters. Do not copy-edit.
+Move every string out of [`src/App.jsx`](../src/App.jsx) into `src/content.js` unchanged, including apostrophe characters. Do not copy-edit.
 
 `AboutSection` (also the top of `PlainPage`): `h1` Ethan Rose, intro line, "A bit about me" paragraph, LinkedIn, GitHub, Resume PDF, Contact Me, Hobbies as an `h2`.
 
@@ -239,11 +239,11 @@ Move every string out of [`src/App.jsx`](src/App.jsx) into `src/content.js` unch
 - The about paragraph is present tense ("currently working"). The full-time MEMOTEXT description is past tense ("I was").
 - Preserve apostrophes as they appear in `App.jsx` when moving the strings. Do not normalize them.
 
-**Path bug.** [`src/App.jsx`](src/App.jsx) still requests `/Screenshot 2026-09-25 104047.png`. That file is not in `public/`. [`public/qflow-screenshot.png`](public/qflow-screenshot.png) is already there. Point the content module at it. No rename left to do.
+**Path bug.** [`src/App.jsx`](../src/App.jsx) still requests `/Screenshot 2026-09-25 104047.png`. That file is not in `public/`. [`public/qflow-screenshot.png`](../public/qflow-screenshot.png) is already there. Point the content module at it. No rename left to do.
 
 **Logos.** Grayscale only. On night sections, each logo sits on a `#f7f7f7` tile with a 2px ink border so dark marks stay visible. Do not invert. Hover and focus clear the filter and show the original color. Alt text stays.
 
-**Noscript.** [`index.html`](index.html) includes real links, not a hint to enable JavaScript:
+**Noscript.** [`index.html`](../index.html) includes real links, not a hint to enable JavaScript:
 
 ```html
 <noscript>
@@ -258,7 +258,7 @@ Move every string out of [`src/App.jsx`](src/App.jsx) into `src/content.js` unch
 
 ## 7. Tailwind theme
 
-Extend [`src/index.css`](src/index.css). Do not add a JS config.
+Extend [`src/index.css`](../src/index.css). Do not add a JS config.
 
 ```css
 @theme {

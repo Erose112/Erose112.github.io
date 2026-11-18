@@ -30,9 +30,9 @@ isProject: false
 
 ## 1. Approach and decisions
 
-Keep the overworld. React still owns the mode. [`src/game/Game.js`](src/game/Game.js) still owns the desert loop. A new `RunnerGame` owns the runner loop on the **same canvas** and the **same** `GameInput` and sprite image. Only one loop runs: `loopMode === 'runner'` makes `Game._isLoopActive()` false, then `RunnerGame` starts its own rAF. On exit, stop the runner first, then `setLoopMode('world')`.
+Keep the overworld. React still owns the mode. [`src/game/Game.js`](../src/game/Game.js) still owns the desert loop. A new `RunnerGame` owns the runner loop on the **same canvas** and the **same** `GameInput` and sprite image. Only one loop runs: `loopMode === 'runner'` makes `Game._isLoopActive()` false, then `RunnerGame` starts its own rAF. On exit, stop the runner first, then `setLoopMode('world')`.
 
-Do not import [`reference/dino_game/`](reference/dino_game). Copy the numbers into JS, the same way [`src/game/atlas.js`](src/game/atlas.js) already does.
+Do not import [`reference/dino_game/`](../reference/dino_game). Copy the numbers into JS, the same way [`src/game/atlas.js`](../src/game/atlas.js) already does.
 
 Decisions, and what was rejected:
 
@@ -54,26 +54,26 @@ Decisions, and what was rejected:
 
 New:
 
-- [`src/game/clock.js`](src/game/clock.js) — `frameDelta(now, last)` clamped to `0.05`. Both loops use it.
-- [`src/game/runner/constants.js`](src/game/runner/constants.js) — scale, track, speed, gaps, storage keys.
-- [`src/game/runner/scoring.js`](src/game/runner/scoring.js) — `distanceRan`, score, 100-point flash. No DOM.
-- [`src/game/runner/difficulty.js`](src/game/runner/difficulty.js) — speed step, fairness ceiling, shift ambition, corridor length.
-- [`src/game/runner/spawner.js`](src/game/runner/spawner.js) — rows, original gap formula, seeded RNG, fairness clamp.
-- [`src/game/runner/simulate.js`](src/game/runner/simulate.js) — sub-stepped footprint test. No DOM.
-- [`src/game/runner/storage.js`](src/game/runner/storage.js) — `localStorage` in try/catch, memory fallback.
-- [`src/game/runner/RunnerGame.js`](src/game/runner/RunnerGame.js) — ready / playing / over / paused, draw, handoff.
-- [`src/components/RunnerOverlay.jsx`](src/components/RunnerOverlay.jsx) — prompts, pause, game-over buttons, mute, slow mode, aria-live.
-- [`test/runner/scoring.test.js`](test/runner/scoring.test.js), [`test/runner/spawner.test.js`](test/runner/spawner.test.js), [`test/runner/simulate.test.js`](test/runner/simulate.test.js).
+- [`src/game/clock.js`](../src/game/clock.js) — `frameDelta(now, last)` clamped to `0.05`. Both loops use it.
+- [`src/game/runner/constants.js`](../src/game/runner/constants.js) — scale, track, speed, gaps, storage keys.
+- [`src/game/runner/scoring.js`](../src/game/runner/scoring.js) — `distanceRan`, score, 100-point flash. No DOM.
+- [`src/game/runner/difficulty.js`](../src/game/runner/difficulty.js) — speed step, fairness ceiling, shift ambition, corridor length.
+- [`src/game/runner/spawner.js`](../src/game/runner/spawner.js) — rows, original gap formula, seeded RNG, fairness clamp.
+- [`src/game/runner/simulate.js`](../src/game/runner/simulate.js) — sub-stepped footprint test. No DOM.
+- [`src/game/runner/storage.js`](../src/game/runner/storage.js) — `localStorage` in try/catch, memory fallback.
+- [`src/game/runner/RunnerGame.js`](../src/game/runner/RunnerGame.js) — ready / playing / over / paused, draw, handoff.
+- [`src/components/RunnerOverlay.jsx`](../src/components/RunnerOverlay.jsx) — prompts, pause, game-over buttons, mute, slow mode, aria-live.
+- [`test/runner/scoring.test.js`](../test/runner/scoring.test.js), [`test/runner/spawner.test.js`](../test/runner/spawner.test.js), [`test/runner/simulate.test.js`](../test/runner/simulate.test.js).
 
 Changed:
 
-- [`src/game/constants.js`](src/game/constants.js), [`src/game/atlas.js`](src/game/atlas.js), [`src/game/input.js`](src/game/input.js), [`src/game/scale.js`](src/game/scale.js)
-- [`src/game/Game.js`](src/game/Game.js), [`src/game/entities.js`](src/game/entities.js), [`src/game/ground.js`](src/game/ground.js), [`src/game/props.js`](src/game/props.js)
-- [`src/App.jsx`](src/App.jsx), [`src/components/World.jsx`](src/components/World.jsx), [`src/components/TouchControls.jsx`](src/components/TouchControls.jsx)
-- [`package.json`](package.json) — `"test": "node --test"` (Node discovers `*.test.js` itself; a quoted glob is not expanded by Windows shells on older Node)
+- [`src/game/constants.js`](../src/game/constants.js), [`src/game/atlas.js`](../src/game/atlas.js), [`src/game/input.js`](../src/game/input.js), [`src/game/scale.js`](../src/game/scale.js)
+- [`src/game/Game.js`](../src/game/Game.js), [`src/game/entities.js`](../src/game/entities.js), [`src/game/ground.js`](../src/game/ground.js), [`src/game/props.js`](../src/game/props.js)
+- [`src/App.jsx`](../src/App.jsx), [`src/components/World.jsx`](../src/components/World.jsx), [`src/components/TouchControls.jsx`](../src/components/TouchControls.jsx)
+- [`package.json`](../package.json) — `"test": "node --test"` (Node discovers `*.test.js` itself; a quoted glob is not expanded by Windows shells on older Node)
 - [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)
 
-[`reference/dino_game/`](reference/dino_game) stays read-only.
+[`reference/dino_game/`](../reference/dino_game) stays read-only.
 
 ## 3. State machine and routing
 
@@ -95,7 +95,7 @@ stateDiagram-v2
   World --> RunnerReady: direct load of #dino-run
 ```
 
-Hash rules, still only through `syncFromLocation()` in [`src/App.jsx`](src/App.jsx):
+Hash rules, still only through `syncFromLocation()` in [`src/App.jsx`](../src/App.jsx):
 
 - `#dino-run` is handled **before** the “unknown hash means world” branch. Today that branch would swallow it.
 - Gameplay enter: same hop and apex wipe as the section gates (`beginEnterTransition`, `WIPE_MS`). At the end, `pushState('#dino-run')` and `syncFromLocation()`. Do not open the dialog. Do not add `'dino'` to `visited`.
@@ -103,7 +103,7 @@ Hash rules, still only through `syncFromLocation()` in [`src/App.jsx`](src/App.j
 - Back / Esc / BACK TO WORLD: if this visit pushed the hash, `history.back()`; otherwise `replaceState('#world')`, same deep-link guard as sections. `placeDinoAtReturn('dino')` puts the dino **north** of the gate (`y - 72`, not the section gates’ `y + 72`). Announce “Back in the desert, at the Dino Run portal.” Focus the canvas.
 - Space latch: on entering ready, clear `jumpQueued`. If Space or the touch jump is still held, ignore it until release. The next new press starts the run. Restart does not return to ready.
 
-`Game.setLoopMode('runner')` pauses the desert the same way `'section'` does. `RunnerGame` gets `game.sprite`, `game.input`, and the canvas. Resize still flows through the existing `ResizeObserver` in [`src/components/World.jsx`](src/components/World.jsx) and is forwarded while the runner is active.
+`Game.setLoopMode('runner')` pauses the desert the same way `'section'` does. `RunnerGame` gets `game.sprite`, `game.input`, and the canvas. Resize still flows through the existing `ResizeObserver` in [`src/components/World.jsx`](../src/components/World.jsx) and is forwarded while the runner is active.
 
 ## 4. Runner scene
 
@@ -111,7 +111,7 @@ Hash rules, still only through `syncFromLocation()` in [`src/App.jsx`](src/App.j
 
 Overworld `computeScale` stays. It yields about 195–480 game px of width, and at 360–780 px/s that is not enough look-ahead.
 
-Runner scale, integer device pixels, same `setTransform(S, 0, 0, S, 0, 0)` and `imageSmoothingEnabled = false` as [`src/game/scale.js`](src/game/scale.js):
+Runner scale, integer device pixels, same `setTransform(S, 0, 0, S, 0, 0)` and `imageSmoothingEnabled = false` as [`src/game/scale.js`](../src/game/scale.js):
 
 ```
 bufferW, bufferH = device pixel box (existing ResizeObserver path)
@@ -140,7 +140,7 @@ Resize and orientation change while playing enter **paused** (state frozen, no c
 
 ### Reference numbers (confirmed)
 
-From [`offline.ts`](reference/dino_game/offline.ts) normal mode: speed **6** px/frame, maxSpeed **13**, acceleration **0.001** per frame, gapCoefficient **0.6**, maxObstacleLength **3**, maxObstacleDuplication **2**, clearTime **3000** ms, gameoverClearTime **1200** ms, maxClouds **6**, cloudFrequency **0.5**, invertDistance **700**, invertFadeDuration **12000** ms. Slow mode: speed **4.2**, maxSpeed **9**, acceleration **0.0005**, gapCoefficient **0.3**.
+From [`offline.ts`](../reference/dino_game/offline.ts) normal mode: speed **6** px/frame, maxSpeed **13**, acceleration **0.001** per frame, gapCoefficient **0.6**, maxObstacleLength **3**, maxObstacleDuplication **2**, clearTime **3000** ms, gameoverClearTime **1200** ms, maxClouds **6**, cloudFrequency **0.5**, invertDistance **700**, invertFadeDuration **12000** ms. Slow mode: speed **4.2**, maxSpeed **9**, acceleration **0.0005**, gapCoefficient **0.3**.
 
 Integrate in 60fps-frame units so a 120Hz display matches Chromium’s per-frame acceleration:
 
@@ -152,9 +152,9 @@ if (speed < maxSpeed) speed += acceleration * frames
 
 Chromium adds acceleration once per `update()` and ignores dt. Multiplying by `frames` is the dt-correct version of that.
 
-Score, from [`distance_meter.ts`](reference/dino_game/distance_meter.ts): `round(ceil(distanceRan) * 0.025)`. Five digits. Achievement every **100**. Flash **250** ms off / **250** ms on, **3** iterations (1.5 s), sound once when the achievement starts. A 50 ms spike at max speed adds under 1 score point, so a boundary is not skipped. Cap the drawn score at **99999** (Chromium would add a sixth digit; the requested HUD does not).
+Score, from [`distance_meter.ts`](../reference/dino_game/distance_meter.ts): `round(ceil(distanceRan) * 0.025)`. Five digits. Achievement every **100**. Flash **250** ms off / **250** ms on, **3** iterations (1.5 s), sound once when the achievement starts. A 50 ms spike at max speed adds under 1 score point, so a boundary is not skipped. Cap the drawn score at **99999** (Chromium would add a sixth digit; the requested HUD does not).
 
-Gap, from [`obstacle.ts`](reference/dino_game/obstacle.ts):
+Gap, from [`obstacle.ts`](../reference/dino_game/obstacle.ts):
 
 ```
 minGap = round(rowWidth * speed + minGapConst * gapCoefficient)
@@ -164,9 +164,9 @@ gap = randInt(minGap, maxGap)
 
 Spawn the next row when `rowX + rowWidth + gap` has reached the right edge of the playfield (Chromium’s `followingObstacleCreated` test). `maxGapCoefficient` is **1.5**.
 
-Slow mode detail to copy, or slow mode gets harder than Chromium: [`obstacle.ts`](reference/dino_game/obstacle.ts) **doubles** `gapCoefficient` when slowdown is on. Config `0.3` becomes an effective **0.6**, the same as normal, while speed stays lower. Do that.
+Slow mode detail to copy, or slow mode gets harder than Chromium: [`obstacle.ts`](../reference/dino_game/obstacle.ts) **doubles** `gapCoefficient` when slowdown is on. Config `0.3` becomes an effective **0.6**, the same as normal, while speed stays lower. Do that.
 
-### Obstacle table (ldpi, from [`offline_sprite_definitions.ts`](reference/dino_game/offline_sprite_definitions.ts))
+### Obstacle table (ldpi, from [`offline_sprite_definitions.ts`](../reference/dino_game/offline_sprite_definitions.ts))
 
 These boxes are the original sprite boxes. The runner does not use them for the hit test.
 
@@ -272,7 +272,7 @@ score    ambition   speed   max |shift| at min gap   at avg gap
 
 Score 1000 is about frame 4770, speed about 10.8. From there the roll may use the whole ceiling. The corridor is still shrinking until score 1500.
 
-Seed: `createRng` from [`src/game/rng.js`](src/game/rng.js), seed stored on the run (`Date.now()` in play, fixed in tests).
+Seed: `createRng` from [`src/game/rng.js`](../src/game/rng.js), seed stored on the run (`Date.now()` in play, fixed in tests).
 
 ### Tuning (starting values)
 
@@ -281,12 +281,12 @@ Seed: `createRng` from [`src/game/rng.js`](src/game/rng.js), seed stored on the 
 - `T_REACT` 0.20, constant. Fair fraction 0.9, constant. Shift ambition 0.25 → 1.0 over score 0–1000.
 - Speed 6 → 13, accel 0.001 / frame, plateau at frame 7000. Slow: 4.2 → 9, accel 0.0005, effective gap coefficient 0.6. Slow uses the same ceiling, ambition, and corridor curves.
 - `clearTime` 3000. `gameoverClearTime` 1200. Forgiveness inset **2** px per side on the dino box.
-- Clouds: max 6, frequency 0.5, gap 100–400, sky y 4–28 inside the playfield, `elSpeed = 0.2/1000 * dtMs * speed` then ceil, matching [`cloud.ts`](reference/dino_game/cloud.ts). Use the existing filled cloud from `buildCloudSprite`, so the runner matches the desert rather than the hollow sheet.
-- Horizon: crop `(2, 52)`, 600×12, two segments, scroll `floor(speed * frames)`, matching [`horizon_line.ts`](reference/dino_game/horizon_line.ts).
+- Clouds: max 6, frequency 0.5, gap 100–400, sky y 4–28 inside the playfield, `elSpeed = 0.2/1000 * dtMs * speed` then ceil, matching [`cloud.ts`](../reference/dino_game/cloud.ts). Use the existing filled cloud from `buildCloudSprite`, so the runner matches the desert rather than the hollow sheet.
+- Horizon: crop `(2, 52)`, 600×12, two segments, scroll `floor(speed * frames)`, matching [`horizon_line.ts`](../reference/dino_game/horizon_line.ts).
 
 ### Collision
 
-Test the inset dino box against each obstacle base footprint. Sub-step at `<= 1/120` s (a clamped 50 ms tick is 6 steps). At max speed one step moves `13 * 0.5 = 6.5` px, which is less than the 17 px cactus, so a frame spike cannot tunnel. No new physics library. `boxesOverlap` in [`src/game/collision.js`](src/game/collision.js) stays the primitive.
+Test the inset dino box against each obstacle base footprint. Sub-step at `<= 1/120` s (a clamped 50 ms tick is 6 steps). At max speed one step moves `13 * 0.5 = 6.5` px, which is less than the 17 px cactus, so a frame spike cannot tunnel. No new physics library. `boxesOverlap` in [`src/game/collision.js`](../src/game/collision.js) stays the primitive.
 
 ### HUD and storage
 
@@ -300,9 +300,9 @@ Ready: dino stands and blinks, scroll speed 0, DOM prompt “PRESS SPACE TO STAR
 
 Game over: freeze scroll and speed. Dino frame 220. Canvas draws the sprite text only: crop `(655, 15, 191, 11)`, centered, `y = round((180 - 25) / 3)` inside the playfield (the reference `textY` 13 and size 191×11 on `textSprite`). The frozen HI and last score stay on the digit HUD.
 
-The restart icon is a DOM button, not a second canvas sprite. Reuse the [`ExitButton.jsx`](src/components/ExitButton.jsx) crop `(2, 68, 36, 32)` at `36N×32N` device pixels. Frame 0 only. The spin offsets in `game_over_panel.ts` (`0, 36, 72, …, 252`) stay unused until that strip is checked on screen, which is already the project rule. Beside it, a Press Start 2P button “BACK TO WORLD”. Both sit under the sprite text, in the letterbox when there is one, over the playfield when the window is short. They are real buttons. Enter and Space activate whichever button is focused, through the browser, not through the game handler. Escape does not activate a button. It stays the runner action even when Restart, Resume, or Back is focused.
+The restart icon is a DOM button, not a second canvas sprite. Reuse the [`ExitButton.jsx`](../src/components/ExitButton.jsx) crop `(2, 68, 36, 32)` at `36N×32N` device pixels. Frame 0 only. The spin offsets in `game_over_panel.ts` (`0, 36, 72, …, 252`) stay unused until that strip is checked on screen, which is already the project rule. Beside it, a Press Start 2P button “BACK TO WORLD”. Both sit under the sprite text, in the letterbox when there is one, over the playfield when the window is short. They are real buttons. Enter and Space activate whichever button is focused, through the browser, not through the game handler. Escape does not activate a button. It stays the runner action even when Restart, Resume, or Back is focused.
 
-Input while crashed, matching [`offline.ts`](reference/dino_game/offline.ts) `onKeyUp`: Enter restarts immediately when the target is the canvas or the body. Space and a canvas tap restart only after **1200** ms. A click on the Restart button is immediate, and so is Enter while that button is focused (the button’s own click, once). Back to world is immediate. Space or Enter on the focused Restart button does not also run the canvas path.
+Input while crashed, matching [`offline.ts`](../reference/dino_game/offline.ts) `onKeyUp`: Enter restarts immediately when the target is the canvas or the body. Space and a canvas tap restart only after **1200** ms. A click on the Restart button is immediate, and so is Enter while that button is focused (the button’s own click, once). Back to world is immediate. Space or Enter on the focused Restart button does not also run the canvas path.
 
 Starting a run moves focus to the canvas synchronously, including a mouse click on Restart. The next Up or Down then moves the dino. The player does not have to click the canvas first.
 
@@ -310,27 +310,27 @@ Esc: ready and game over exit to the desert immediately. During a run, Esc pause
 
 ## 6. Overworld
 
-[`src/game/constants.js`](src/game/constants.js) today is `960×560`, ground `y = 120–540`, spawn `(480, 430)`, gates at `(220, 300)`, `(480, 190)`, `(740, 300)`.
+[`src/game/constants.js`](../src/game/constants.js) today is `960×560`, ground `y = 120–540`, spawn `(480, 430)`, gates at `(220, 300)`, `(480, 190)`, `(740, 300)`.
 
 - `WORLD_HEIGHT = 780`, `GROUND_BOTTOM = 760`. Walk clamp already uses `GROUND_BOTTOM`. Width, sky, spawn, and the three gates stay.
 - Dino gate center **`(480, 660)`**. Return **`(480, 588)`** (`660 - 72`). Trigger top is about `y = 632`, so the return footprint does not sit in the trigger. `GATE_OPENING_CLEAR_PX` (90) already covers that point, so props will not spawn on it.
 - Keep the 48 px gap, 40×28 trigger, and jump-to-enter test. Cue string: “Dino Run. Press Space to enter.” Coarse pointer: “Dino Run. Tap jump to enter.”
 - Look: same two large posts and the same trigger math, **no small outer flanks** (that pair is the section-gate silhouette). A pterodactyl flaps in place above the gap (frames 134 and 180, `1000/6` ms, ±18 px), with no collider. A short horizon strip lies on the ground through the opening. Label is two DOM lines, `DINO RUN` and `HI 00000`, class `portal-label--dino`, never `portal-label--visited`.
-- [`src/game/ground.js`](src/game/ground.js) draws spawn→gate dots for every `PORTAL_DEFS` entry. The dino gate is a separate def with `path: false`, excluded from that loop and from the prop path-clear in [`src/game/props.js`](src/game/props.js). Opening clear still applies. No off-screen edge hint for this gate (the CSS for hints exists; the JSX does not render them today, and this gate must not grow one).
+- [`src/game/ground.js`](../src/game/ground.js) draws spawn→gate dots for every `PORTAL_DEFS` entry. The dino gate is a separate def with `path: false`, excluded from that loop and from the prop path-clear in [`src/game/props.js`](../src/game/props.js). Opening clear still applies. No off-screen edge hint for this gate (the CSS for hints exists; the JSX does not render them today, and this gate must not grow one).
 - Ground and props: run the current generator with the old bottom `540` and the old counts, then fill `y = 540–760` from `WORLD_SEED + 11`. Clouds are screen-space and need no change. Camera headroom formula stays `clamp(147 / visibleH, 0.5, 0.85)`. A taller world only means the camera can scroll south before it hits the clamp; portrait phones letterbox less.
 
 `visited` stays the three section ids. The HUD is currently the “ETHAN ROSE” link, not a visible `n/3`. Exclusion means: do not insert `'dino'` into that set, and do not invert this label as a visited section.
 
 ## 7. Input, touch, audio, accessibility
 
-Extend [`src/game/input.js`](src/game/input.js). Do not add a second window listener.
+Extend [`src/game/input.js`](../src/game/input.js). Do not add a second window listener.
 
 - `setAxisMode('plane' | 'vertical')`. Vertical mode forces axis x to 0. Keyboard still uses `event.code`, ignores `repeat`, and clears on blur and hide.
 - New edges, consumed once per frame: Enter, Escape, KeyM.
 - Space and Enter yield when `event.target` is a `button`, an `a`, an `input`, or `[role=button]`. The handler does not `preventDefault` those two and does not treat them as game actions. Native activation of Restart, Back, Resume, mute, Skip, and the name link keeps working. A focused Restart button plus Space restarts once.
 - Escape does not yield to those targets. It remains a runner action while the runner is active: exit from ready and game over, pause during a run, resume from pause. That includes focus on Restart, Resume, or Back. The one exception is an open modal dialog (`dialog[open]`, the section dialog). Then Escape is left to the dialog and is not a runner action.
 - `preventDefault` for arrows, Space, and Enter only when the target is the canvas or the body, and only while that loop wants the keys (desert playing, or the runner playing). A section dialog still scrolls normally. `preventDefault` on Escape while the runner is active, including when a button is focused, and not while a dialog is open. Movement keys are ignored when the target is a button, link, or input, so a focused Restart does not also slide the dino. As soon as a run starts, focus is on the canvas, so the next Up or Down does move it.
-- [`TouchControls.jsx`](src/components/TouchControls.jsx) gains `axisLock="vertical"` (zero x before `setTouchAxis`). Hide the JUMP button in the runner. Tap on the canvas is the start/restart gesture, with the same release latch and the 1200 ms crash delay. Pointer capture and the 0.2 deadzone stay.
+- [`TouchControls.jsx`](../src/components/TouchControls.jsx) gains `axisLock="vertical"` (zero x before `setTouchAxis`). Hide the JUMP button in the runner. Tap on the canvas is the start/restart gesture, with the same release latch and the 1200 ms crash delay. Pointer capture and the 0.2 deadzone stay.
 
 Audio, milestone R6, files named in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md): `public/sounds/button-press.mp3` (start and restart), `hit.mp3` (crash), `score-reached.mp3` (each 100). Muted **by default**. M and a visible button toggle it. Persist the flag. Unlock on the first runner gesture via `HTMLAudioElement.play()`, and ignore rejection. Chromium’s `loadSounds()` returns immediately on iOS and never plays. We still try after a gesture. If iOS or the silent switch rejects `play()`, stay silent. Score flash and the bird telegraph are visual, so silence is not a fairness bug. Confirm the three files are actually on disk before R6 (the notices list them; they were not in the workspace file search).
 
