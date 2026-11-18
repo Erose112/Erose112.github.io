@@ -68,6 +68,17 @@ export const CLOUD_RESPAWN_GAP_MAX = 360
 
 export const PROP_COUNT_MIN = 14
 export const PROP_COUNT_MAX = 20
+/** South extension band (`WORLD_SEED + 11`); north band keeps `PROP_COUNT_*`. */
+export const SOUTH_PROP_COUNT_MIN = 6
+export const SOUTH_PROP_COUNT_MAX = 10
+export const SOUTH_GROUND_SLICE_MIN = 18
+export const SOUTH_GROUND_SLICE_MAX = 28
+export const SOUTH_GROUND_PEBBLE_MIN = 70
+export const SOUTH_GROUND_PEBBLE_MAX = 110
+export const SOUTH_GROUND_TUFT_MIN = 16
+export const SOUTH_GROUND_TUFT_MAX = 28
+export const SOUTH_GROUND_DUNE_MIN = 3
+export const SOUTH_GROUND_DUNE_MAX = 6
 export const PROP_MIN_SPACING = 56
 export const GATE_OPENING_CLEAR_PX = 90
 export const PROP_PATH_CLEAR_PX = 40
@@ -105,8 +116,7 @@ export const WELCOME_BLINK_MS = 1000 / 3
 
 export const SPRITE_SHEET_URL = assetUrl('sprites/100-offline-sprite.png')
 
-/** Horizon strip: try 52 if 54 clips bumps (see PLAN §5). */
-export const HORIZON_SOURCE_Y = 52
+export { HORIZON_SOURCE_Y } from './atlas.js'
 
 export function cameraAnchor(visibleHeight) {
   return Math.max(0.5, Math.min(0.85, HEADROOM / visibleHeight))

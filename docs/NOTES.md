@@ -404,3 +404,31 @@
 - Crop/dpr audit on runner HUD and game-over strip; confirm restart strip offsets on screen.
 - `THIRD_PARTY_NOTICES.md` — mark sounds as in use and list runner atlas crops.
 - North desert ground/props regression check after south-band work (R1).
+
+## R7 — Polish and credit (completed)
+
+### Built
+- `src/game/atlas.js` — `textSprite` (digits, HI, GAME OVER), `TREX_FRAME_OFFSET.crash`, `runnerDigitSrc()`, `cactusClusterSrc()`; `HORIZON_SOURCE_Y` lives here (re-exported from `constants.js`).
+- `src/game/runner/constants.js` — HUD / game-over / crash offsets sourced from `atlas.js`.
+- `src/game/runner/RunnerGame.js` — HUD and cluster draws use atlas helpers.
+- `src/game/constants.js` — named south-band ground/prop density (`SOUTH_*`); north still uses `WORLD_SEED+1` / `+7` with unchanged ranges.
+- `src/components/RunnerOverlay.jsx` — restart button **frame 0 only** (same crisp `36N×32N` path as `ExitButton.jsx`).
+- `THIRD_PARTY_NOTICES.md` — full crop table aligned with `atlas.js` (digits, HI, GAME OVER, restart, clusters, ptero, cloud, horizon, dino frames, sounds).
+- `test/runner/atlas.test.js` — cluster and digit rect regression for CI.
+
+### Deviations
+- **`HORIZON_SOURCE_Y` moved to `atlas.js`** so Node tests can import atlas without loading Vite `assetUrl` via `constants.js`. Value stays **52**; `constants.js` re-exports.
+- **Runner restart spin removed** in R7 (plan frame 0 only); R6 had left the 8-frame strip spinning.
+- **South prop density** unchanged at **6–10**; R7 only names constants (no layout change vs R1).
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/atlas.js` | `HORIZON_SOURCE_Y`, `ATLAS.textSprite.*`, `TREX_FRAME_OFFSET`, cluster via `cactusClusterSrc` |
+| `src/game/constants.js` | `SOUTH_PROP_COUNT_*`, `SOUTH_GROUND_SLICE_*`, `SOUTH_GROUND_PEBBLE_*`, `SOUTH_GROUND_TUFT_*`, `SOUTH_GROUND_DUNE_*` |
+| `src/game/scale.js` | `computeScale`, `restartSpriteMultiple` (dpr **1.25** → N **3**, **1.5** → N **3**) |
+| `src/game/runner/constants.js` | `computeRunnerScale`, digit/HUD fields mirrored from atlas |
+
+### For post-R7
+- All PLAN-DINO-RUN milestones through R7 are complete; optional follow-ups in plan §11 (jump dodge, ready-on-restart, visible HI n/3, night invert, audio files on disk) remain product choices, not blockers.
+- Visual dpr **1.25** / **1.5** checks are browser-only (integer `S` and restart crop sizing).

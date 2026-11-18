@@ -43,10 +43,14 @@ export const CLOUD_GAP_MAX = 400
 export const CLOUD_Y_MIN = 4
 export const CLOUD_Y_MAX = 28
 
-export const TEXT_SPRITE_X = 655
-export const DIGIT_W = 10
-export const DIGIT_H = 13
-export const DIGIT_STEP = 11
+import { ATLAS, TREX_FRAME_OFFSET } from '../atlas.js'
+
+const { textSprite: TEXT } = ATLAS
+
+export const TEXT_SPRITE_X = TEXT.x
+export const DIGIT_W = TEXT.digitW
+export const DIGIT_H = TEXT.digitH
+export const DIGIT_STEP = TEXT.digitStep
 export const HUD_Y = 5
 export const HUD_HI_ALPHA = 0.8
 
@@ -108,10 +112,10 @@ export const CACTUS_LARGE = {
   multipleSpeed: 7,
 }
 
-export const GAME_OVER_SRC = { x: 655, y: 15, w: 191, h: 11 }
+export const GAME_OVER_SRC = TEXT.gameOver
 export const GAME_OVER_Y_FRAC = Math.round((PLAYFIELD_H - 25) / 3)
 
-export const TREX_CRASH_OFFSET = 220
+export const TREX_CRASH_OFFSET = TREX_FRAME_OFFSET.crash
 
 /** Bird rows (PLAN-DINO-RUN §10). */
 export const BIRD_MIN_SPEED = 8.5

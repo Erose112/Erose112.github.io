@@ -10,6 +10,8 @@ import {
   PROP_COUNT_MIN,
   PROP_MIN_SPACING,
   PROP_PATH_CLEAR_PX,
+  SOUTH_PROP_COUNT_MAX,
+  SOUTH_PROP_COUNT_MIN,
   SPAWN,
   WORLD_SEED,
   WORLD_WIDTH,
@@ -130,7 +132,7 @@ export function createPropCacti() {
   )
 
   const southRng = createRng(WORLD_SEED + 11)
-  const southTarget = randInt(southRng, 6, 10)
+  const southTarget = randInt(southRng, SOUTH_PROP_COUNT_MIN, SOUTH_PROP_COUNT_MAX)
   spawnPropsInBand(
     southRng,
     GROUND_NORTH_BOTTOM,

@@ -240,12 +240,12 @@ dialog.section-dialog::backdrop {
 }
 
 .world-shell .portal-cue {
-  bottom: max(5.5rem, calc(1rem + env(safe-area-inset-bottom, 0px)));
+  bottom: max(7rem, calc(1.5rem + env(safe-area-inset-bottom, 0px)));
 }
 
 @media (pointer: fine) {
   .world-shell .portal-cue {
-    bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+    bottom: max(4.5rem, env(safe-area-inset-bottom, 0px));
   }
 }
 

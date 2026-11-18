@@ -30,7 +30,7 @@ isProject: false
 
 ## 1. Approach
 
-Confirmed stack: plain JS React 19 (`src/App.jsx`, `src/main.jsx`), Vite 8, Tailwind **v4.3.5** via `@tailwindcss/vite`. There is no `tailwind.config.js`. Theme tokens go in [`src/index.css`](src/index.css) with `@theme`. The only app code today is [`src/App.jsx`](src/App.jsx) (content, `LogoMarquee`, `ExpandableDescription`) plus a marquee keyframe. [`reference/dino_game/`](reference/dino_game) stays read-only and is never imported.
+Confirmed stack: plain JS React 19 (`src/App.jsx`, `src/main.jsx`), Vite 8, Tailwind **v4.3.5** via `@tailwindcss/vite`. There is no `tailwind.config.js`. Theme tokens go in [`src/index.css`](src/index.css) with `@theme`. The only app code today is [`src/App.jsx`](src/App.jsx) (content, `LogoMarquee`, `ExpandableDescription`) plus a marquee keyframe. [`reference/dino_game/`](../reference/dino_game) stays read-only and is never imported.
 
 **Renderer: Canvas 2D, no Phaser or Kaplay.** The world is one 1x sprite sheet, a camera, and a few dozen `drawImage` calls. Canvas 2D matches how Chromium draws this game, keeps `imageSmoothingEnabled = false`, and adds no dependency. DOM sprites fight integer camera scrolling. A game library would own the loop and duplicate React.
 
@@ -316,7 +316,7 @@ Each one is shippable on its own and checkable in the browser.
 4. **Portals.** Three gates, base footprints, canvas y-sort, DOM labels above the canvas, cues, jump-to-enter callback, return coordinates. Acceptance: walking through a gate does not fire; jumping inside does; jumping from outside does not; the dino cannot leave the walkable rect; posts block only on the ~25 by 8 and ~17 by 6 bases; the dino draws behind a cactus when its feet are higher on screen; labels stay above the canvas and are not z-index sorted. Label size is 16px at `S / dpr` of 2 and 24px at 3 or more.
 5. **Sections.** Mode machine, hop then wipe at the apex with `inputLocked` while the loop still runs, native `showModal()` dialog, single-frame restart crop, `syncFromLocation`. Acceptance: the wipe does not start before the apex; the loop is still drawing through `transition` and paused in the section; text is selectable; links work; Show more works; Back, Forward, Esc, and the restart button each settle on one state; a second Esc does not run the exit twice; a deep link does not navigate off the site; the exit image is the circular-arrow crop at a whole device-pixel size; spin offsets stay unused until that crop is checked; reduced motion skips the wipe.
 6. **Phone, skip, HUD, focus.** Pointer-capture joystick and jump button together, portrait and landscape, safe areas, `100dvh` dialog, skip and hashes, `HI n/3`, live region, focus moves. Acceptance: a phone-width viewport can reach all three gates and scroll a section; joystick and jump work at the same time; `#about` opens the game-shell dialog and `#plain` opens the plain page; Forward returns to a section after Back; keyboard-only play can enter and leave.
-7. **Load and credit.** Preload the 1x sheet, lazy section images, footer line, a README line, extend [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md). Acceptance: the 1x sheet is requested early, section images are not in the first load, the BSD credit is visible on the plain page and in the notices file.
+7. **Load and credit.** Preload the 1x sheet, lazy section images, footer line, a README line, extend [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md). Acceptance: the 1x sheet is requested early, section images are not in the first load, the BSD credit is visible on the plain page and in the notices file.
 
 **Optional, after the core.** The restart-button spin, only after the frame-0 crop is confirmed and the x offsets are checked against the sheet. Until then those offsets are unverified. Muted-by-default audio (`button-press` on jump and exit, `score-reached` when the counter increments). Do not play `hit.mp3`. It is a death sound. A day/night toggle for the world using the moon and stars. A decorative pterodactyl on a timer, with no collision.
 
@@ -341,7 +341,7 @@ Non-blocking defaults already chosen: game first, plain page behind Skip. Visite
 
 ## 11. Assets
 
-Present and usable: both sprite sheets, all three mp3s, `memotext-logo.png`, `queens-logo.png`, `slr-logo.jpg`, `u-flourish.png`, `qret_image.webp`, `seo-audit-screenshot.png`, `qflow-screenshot.png`, the resume PDF, and every file in [`reference/dino_game/`](reference/dino_game). [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) already has the Chromium BSD line.
+Present and usable: both sprite sheets, all three mp3s, `memotext-logo.png`, `queens-logo.png`, `slr-logo.jpg`, `u-flourish.png`, `qret_image.webp`, `seo-audit-screenshot.png`, `qflow-screenshot.png`, the resume PDF, and every file in [`reference/dino_game/`](../reference/dino_game). [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) already has the Chromium BSD line.
 
 The renderer uses the 1x sheet only. The 2x sheet is unused.
 

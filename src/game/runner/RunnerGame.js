@@ -1,4 +1,9 @@
-import { ATLAS, TREX_FRAME_OFFSET } from '../atlas.js'
+import {
+  ATLAS,
+  TREX_FRAME_OFFSET,
+  cactusClusterSrc,
+  runnerDigitSrc,
+} from '../atlas.js'
 import { INK_COLOR } from '../constants.js'
 import {
   BLINK_DELAY_MAX_MS,
@@ -44,7 +49,6 @@ import {
   playfieldOffsetY,
   PLAYFIELD_H,
   SKY_BOTTOM,
-  TEXT_SPRITE_X,
   TRACK_BOTTOM,
   TRACK_TOP,
   TREX_CRASH_OFFSET,
@@ -91,10 +95,10 @@ function randomBlinkDelay() {
  * @param {number} [alpha]
  */
 function drawHudGlyph(ctx, sheet, digit, destX, destY, alpha = 1) {
-  const sx = TEXT_SPRITE_X + digit * DIGIT_W
+  const { x: sx, y: sy, w, h } = runnerDigitSrc(digit)
   ctx.save()
   ctx.globalAlpha = alpha
-  ctx.drawImage(sheet, sx, 2, DIGIT_W, DIGIT_H, destX, destY, DIGIT_W, DIGIT_H)
+  ctx.drawImage(sheet, sx, sy, w, h, destX, destY, w, h)
   ctx.restore()
 }
 
@@ -123,8 +127,15 @@ function drawScoreHud(ctx, sheet, score, hi, playfieldW, showCurrent) {
   }
 
   const hiLabelX = currentRight - DIGIT_STEP * 5 - DIGIT_STEP * 2 - DIGIT_W
-  drawHudGlyph(ctx, sheet, 10, hiLabelX, HUD_Y, HUD_HI_ALPHA)
-  drawHudGlyph(ctx, sheet, 11, hiLabelX + DIGIT_STEP, HUD_Y, HUD_HI_ALPHA)
+  drawHudGlyph(ctx, sheet, ATLAS.textSprite.hiIndex, hiLabelX, HUD_Y, HUD_HI_ALPHA)
+  drawHudGlyph(
+    ctx,
+    sheet,
+    ATLAS.textSprite.iIndex,
+    hiLabelX + DIGIT_STEP,
+    HUD_Y,
+    HUD_HI_ALPHA,
+  )
 
   let hx = hiLabelX - DIGIT_STEP
   for (let i = 4; i >= 0; i -= 1) {
@@ -856,22 +867,23 @@ export class RunnerGame {
    */
   drawRowFootprint(ctx, row, screenLeft, fp) {
     const cfg = row.type === 'large' ? CACTUS_LARGE : CACTUS_SMALL
-    const atlas = row.type === 'large' ? ATLAS.cactusLarge : ATLAS.cactusSmall
     const size = row.clusterSize
-    const destW = atlas.w * size
-    const sourceX = atlas.x + atlas.w * size * (size - 1) / 2
+    const { x: sourceX, y: sourceY, w: destW, h: spriteH } = cactusClusterSrc(
+      row.type === 'large' ? 'large' : 'small',
+      size,
+    )
     const destX = Math.round(screenLeft)
     const destY = Math.round(fp.footY - cfg.spriteH)
     ctx.drawImage(
       this.sprite,
       sourceX,
-      atlas.y,
+      sourceY,
       destW,
-      atlas.h,
+      spriteH,
       destX,
       destY,
       destW,
-      atlas.h,
+      spriteH,
     )
   }
 

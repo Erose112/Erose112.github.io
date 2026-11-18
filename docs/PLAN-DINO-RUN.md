@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: r7-polish
     content: "R7: Crop and dpr check, south-band ground that does not reshuffle the north, attribution update."
-    status: pending
+    status: completed
 isProject: false
 ---
 
@@ -71,7 +71,7 @@ Changed:
 - [`src/game/Game.js`](src/game/Game.js), [`src/game/entities.js`](src/game/entities.js), [`src/game/ground.js`](src/game/ground.js), [`src/game/props.js`](src/game/props.js)
 - [`src/App.jsx`](src/App.jsx), [`src/components/World.jsx`](src/components/World.jsx), [`src/components/TouchControls.jsx`](src/components/TouchControls.jsx)
 - [`package.json`](package.json) — `"test": "node --test"` (Node discovers `*.test.js` itself; a quoted glob is not expanded by Windows shells on older Node)
-- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)
+- [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)
 
 [`reference/dino_game/`](reference/dino_game) stays read-only.
 
@@ -332,7 +332,7 @@ Extend [`src/game/input.js`](src/game/input.js). Do not add a second window list
 - `preventDefault` for arrows, Space, and Enter only when the target is the canvas or the body, and only while that loop wants the keys (desert playing, or the runner playing). A section dialog still scrolls normally. `preventDefault` on Escape while the runner is active, including when a button is focused, and not while a dialog is open. Movement keys are ignored when the target is a button, link, or input, so a focused Restart does not also slide the dino. As soon as a run starts, focus is on the canvas, so the next Up or Down does move it.
 - [`TouchControls.jsx`](src/components/TouchControls.jsx) gains `axisLock="vertical"` (zero x before `setTouchAxis`). Hide the JUMP button in the runner. Tap on the canvas is the start/restart gesture, with the same release latch and the 1200 ms crash delay. Pointer capture and the 0.2 deadzone stay.
 
-Audio, milestone R6, files named in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md): `public/sounds/button-press.mp3` (start and restart), `hit.mp3` (crash), `score-reached.mp3` (each 100). Muted **by default**. M and a visible button toggle it. Persist the flag. Unlock on the first runner gesture via `HTMLAudioElement.play()`, and ignore rejection. Chromium’s `loadSounds()` returns immediately on iOS and never plays. We still try after a gesture. If iOS or the silent switch rejects `play()`, stay silent. Score flash and the bird telegraph are visual, so silence is not a fairness bug. Confirm the three files are actually on disk before R6 (the notices list them; they were not in the workspace file search).
+Audio, milestone R6, files named in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md): `public/sounds/button-press.mp3` (start and restart), `hit.mp3` (crash), `score-reached.mp3` (each 100). Muted **by default**. M and a visible button toggle it. Persist the flag. Unlock on the first runner gesture via `HTMLAudioElement.play()`, and ignore rejection. Chromium’s `loadSounds()` returns immediately on iOS and never plays. We still try after a gesture. If iOS or the silent switch rejects `play()`, stay silent. Score flash and the bird telegraph are visual, so silence is not a fairness bug. Confirm the three files are actually on disk before R6 (the notices list them; they were not in the workspace file search).
 
 Accessibility:
 
@@ -369,7 +369,7 @@ Each one is playable on its own.
 
 **R6 — Touch, audio, slow mode, focus.** Vertical stick, tap to start, mute, the three sounds, reduced-motion note, focus moves. Acceptance: keyboard-only can start, pause, restart, and leave; Space and Enter on a focused Restart, Resume, or Back button do not also run the canvas path; Escape still pauses, resumes, or leaves while those buttons are focused, and does not steal Escape from an open section dialog; mute survives reload; a failed `play()` does not throw; slow mode uses 4.2 / 9 / 0.0005 and the doubled gap coefficient; a slow-mode record updates `hiSlow` and leaves the gate’s HI unchanged.
 
-**R7 — Polish and credit.** Crop check at dpr 1.25 and 1.5, south-band density, [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) lists the runner crops (digits, HI, GAME OVER, restart, cactus groups, pterodactyl, cloud, horizon, dino frames). Acceptance: the north desert is the same layout as before the extension; notices match the crops in `atlas.js`.
+**R7 — Polish and credit.** Crop check at dpr 1.25 and 1.5, south-band density, [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) lists the runner crops (digits, HI, GAME OVER, restart, cactus groups, pterodactyl, cloud, horizon, dino frames). Acceptance: the north desert is the same layout as before the extension; notices match the crops in `atlas.js`.
 
 ## 10. Birds (R5) and risks
 

@@ -122,7 +122,7 @@ export default function World({
       const game = gameRef.current
       if (game) {
         const head = game.getDinoScreenHead()
-        setWelcomeAnchor({ x: head.x, y: head.y - 56 })
+        setWelcomeAnchor({ x: head.x, y: head.y - 88 })
       }
       raf = requestAnimationFrame(tick)
     }
@@ -458,16 +458,22 @@ export default function World({
           anchor={welcomeAnchor}
         />
       ) : null}
-      <p
-        className="portal-cue font-display pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-30 w-[min(100%,22rem)] -translate-x-1/2 text-center text-base text-ink transition-none"
-        style={{
-          opacity: showCue ? 1 : proximityId && mode === 'world' && !reduceMotion ? 0.15 : 1,
-        }}
-        aria-live="polite"
-        role="status"
-      >
-        {mode === 'world' ? (proximityId ? cueText : '\u00a0') : '\u00a0'}
-      </p>
+      {mode === 'world' && proximityId ? (
+        <div
+          className="portal-cue font-display pointer-events-none absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-30 w-[min(100%,22rem)] -translate-x-1/2 border-2 border-ink bg-desert px-3 py-2 text-center text-base text-ink transition-none"
+          role="status"
+          aria-live="polite"
+        >
+          <span
+            className="block transition-none"
+            style={{
+              opacity: showCue ? 1 : reduceMotion ? 1 : 0.15,
+            }}
+          >
+            {cueText}
+          </span>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -485,7 +491,7 @@ function WelcomeBanner({ reduceMotion, welcomeBlink, title, body, anchor }) {
   const opacity = reduceMotion || welcomeBlink ? 1 : 0.2
   return (
     <h1
-      className="welcome-banner font-display pointer-events-none absolute z-20 w-[min(100%,20rem)] -translate-x-1/2 -translate-y-full text-center text-xs text-ink transition-none sm:text-base"
+      className="welcome-banner font-display pointer-events-none absolute z-20 w-[min(100%,20rem)] -translate-x-1/2 -translate-y-full border-2 border-ink bg-desert px-3 py-2 text-center text-xs text-ink transition-none sm:text-base"
       style={{ left: anchor.x, top: anchor.y }}
     >
       <span className="block" style={{ opacity }} aria-live="polite">
