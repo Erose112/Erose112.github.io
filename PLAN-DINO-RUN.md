@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: r6-a11y
     content: "R6: Vertical touch stick, audio toggle, slow mode with a separate HI, and focus/live-region behavior."
-    status: pending
+    status: completed
   - id: r7-polish
     content: "R7: Crop and dpr check, south-band ground that does not reshuffle the north, attribution update."
     status: pending

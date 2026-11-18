@@ -1,4 +1,11 @@
-import { SPEED_ACCEL, SPEED_MAX, SPEED_START } from './constants.js'
+import {
+  SPEED_ACCEL,
+  SPEED_MAX,
+  SPEED_START,
+  SLOW_SPEED_ACCEL,
+  SLOW_SPEED_MAX,
+  SLOW_SPEED_START,
+} from './constants.js'
 
 const SCORE_FACTOR = 0.025
 const SCORE_MAX = 99999
@@ -15,10 +22,10 @@ const SCORE_MAX = 99999
  * }} RunScoring
  */
 
-export function createRunScoring() {
+export function createRunScoring(slow = false) {
   return {
     distanceRan: 0,
-    speed: SPEED_START,
+    speed: slow ? SLOW_SPEED_START : SPEED_START,
     score: 0,
     flashUntil: 0,
     flashOn: false,

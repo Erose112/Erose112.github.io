@@ -339,20 +339,6 @@ export default function App() {
     }
   }, [syncFromLocation])
 
-  useEffect(() => {
-    if (mode !== 'runner') {
-      return undefined
-    }
-    const onKey = (e) => {
-      if (e.code === 'Escape' && !e.repeat) {
-        e.preventDefault()
-        handleRunnerBack()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [mode, handleRunnerBack])
-
   useEffect(() => () => clearWipeTimer(), [clearWipeTimer])
 
   useEffect(() => {

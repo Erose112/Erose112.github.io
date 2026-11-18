@@ -9,7 +9,14 @@ import {
 import { frameDelta } from '../clock.js'
 import { resolveBufferSize } from '../scale.js'
 import { createRng, randInt } from '../rng.js'
-import { readHiScore, writeHiScore } from './storage.js'
+import { RunnerAudio } from './audio.js'
+import {
+  readHiScore,
+  readHiSlowScore,
+  readSlowMode,
+  writeHiScore,
+  writeHiSlowScore,
+} from './storage.js'
 import { createSpawner, maybeSpawnRows } from './spawner.js'
 import { stepRunnerMotion } from './simulate.js'
 import {
@@ -51,13 +58,25 @@ import {
   BIRD_TELEGRAPH_BLINK_MS,
   BIRD_TELEGRAPH_SEC,
   RUNNER_PTERO_FRAME_MS,
+  GAP_COEFFICIENT,
+  SLOW_GAP_COEFFICIENT,
+  SLOW_SPEED_ACCEL,
+  SLOW_SPEED_MAX,
+  SLOW_SPEED_START,
 } from './constants.js'
 import {
   createRunScoring,
   scoreDrawVisible,
   stepRunScoring,
+  stepRunScoringWithSpeed,
   updateScoreFlash,
 } from './scoring.js'
+
+const SLOW_SPEED_CFG = {
+  start: SLOW_SPEED_START,
+  max: SLOW_SPEED_MAX,
+  accel: SLOW_SPEED_ACCEL,
+}
 
 function randomBlinkDelay() {
   return BLINK_DELAY_MIN_MS + Math.random() * (BLINK_DELAY_MAX_MS - BLINK_DELAY_MIN_MS)
@@ -135,7 +154,10 @@ export class RunnerGame {
    *   input: import('../input.js').GameInput | null,
    *   cloudSprite: HTMLCanvasElement | null,
    *   reduceMotion: boolean,
+   *   audio?: RunnerAudio,
    *   onGameOver?: () => void,
+   *   onExitToWorld?: () => void,
+   *   onAnnounce?: (message: string) => void,
    * }} deps
    */
   constructor(canvas, deps) {
@@ -144,7 +166,11 @@ export class RunnerGame {
     this.input = deps.input
     this.cloudSprite = deps.cloudSprite
     this.reduceMotion = deps.reduceMotion
+    this.audio = deps.audio ?? new RunnerAudio()
     this.onGameOver = deps.onGameOver
+    this.onExitToWorld = deps.onExitToWorld
+    this.onAnnounce = deps.onAnnounce
+    this.slowMode = readSlowMode()
     this.disposed = false
     this.rafId = 0
     this.running = false
@@ -168,8 +194,9 @@ export class RunnerGame {
     this.spawner = null
     this.crashAtMs = 0
     this._runSeed = Date.now()
-    this.scoring = createRunScoring()
-    this.hiScore = readHiScore()
+    this.scoring = createRunScoring(this.slowMode)
+    this.hiScore = this.slowMode ? readHiSlowScore() : readHiScore()
+    this._scoreFlashIterSnapshot = 0
     this.clouds = createRunnerClouds()
     this.cloudRng = createRng(Date.now())
     this.cloudSpawnAcc = 0
@@ -193,12 +220,24 @@ export class RunnerGame {
   }
 
   wantsKeyboardCapture() {
-    return !this.disposed && this.running && this.phase !== 'paused'
+    return !this.disposed && this.running && this.phase === 'playing'
+  }
+
+  wantsRunnerPreventDefault() {
+    return (
+      !this.disposed &&
+      this.running &&
+      (this.phase === 'ready' ||
+        this.phase === 'playing' ||
+        this.phase === 'over')
+    )
   }
 
   enterReady() {
     this.phase = 'ready'
-    this.scoring = createRunScoring()
+    this.slowMode = readSlowMode()
+    this.hiScore = this.slowMode ? readHiSlowScore() : readHiScore()
+    this.scoring = createRunScoring(this.slowMode)
     this.cameraX = 0
     this.horizonX = 0
     this.runningTime = 0
@@ -215,6 +254,7 @@ export class RunnerGame {
     this.resetSpawner()
     this.rows = []
     this.crashAtMs = 0
+    this._scoreFlashIterSnapshot = 0
   }
 
   resetSpawner() {
@@ -280,6 +320,8 @@ export class RunnerGame {
     if (this._layoutReady && this.phase === 'playing') {
       this.phase = 'paused'
       this._pauseFromResize = true
+      this._systemPause = true
+      this.announce('Paused.')
     }
     this._layoutReady = true
 
@@ -320,6 +362,32 @@ export class RunnerGame {
     return out
   }
 
+  announce(message) {
+    this.onAnnounce?.(message)
+  }
+
+  /** @param {boolean} slow */
+  setSlowMode(slow) {
+    if (this.phase !== 'ready' && this.phase !== 'paused') {
+      return
+    }
+    this.slowMode = slow
+    this.hiScore = slow ? readHiSlowScore() : readHiScore()
+    if (this.phase === 'ready') {
+      this.scoring = createRunScoring(slow)
+    }
+  }
+
+  toggleMute() {
+    const muted = this.audio.toggleMuted()
+    this.announce(muted ? 'Sound off.' : 'Sound on.')
+    return muted
+  }
+
+  isMuted() {
+    return this.audio.muted
+  }
+
   crash() {
     if (this.phase !== 'playing') {
       return
@@ -328,9 +396,15 @@ export class RunnerGame {
     this.crashAtMs = performance.now()
     this.dino.frameOffset = TREX_CRASH_OFFSET
     this.input?.clearAll()
+    this.audio.play('hit')
     if (this.scoring.score > this.hiScore) {
-      this.hiScore = writeHiScore(this.scoring.score)
+      this.hiScore = this.slowMode
+        ? writeHiSlowScore(this.scoring.score)
+        : writeHiScore(this.scoring.score)
     }
+    this.announce(
+      `Game over. Score ${this.scoring.score}. High score ${this.hiScore}.`,
+    )
     this.onGameOver?.()
   }
 
@@ -338,7 +412,9 @@ export class RunnerGame {
     if (this.phase !== 'over') {
       return
     }
-    this.scoring = createRunScoring()
+    this.audio.unlock()
+    this.audio.play('button')
+    this.scoring = createRunScoring(this.slowMode)
     this.cameraX = 0
     this.horizonX = 0
     this.runningTime = 0
@@ -349,6 +425,7 @@ export class RunnerGame {
     this.phase = 'playing'
     this.dino.frameOffset = TREX_FRAME_OFFSET.run1
     this.dino.runFrameIndex = 0
+    this._scoreFlashIterSnapshot = 0
     this.canvas.focus({ preventScroll: true })
   }
 
@@ -373,11 +450,12 @@ export class RunnerGame {
       this.phase = 'paused'
       this._systemPause = true
       this.input?.clearAll()
+      this.announce('Paused.')
     }
   }
 
   _onFocus() {
-    this._resumeAfterSystemPause()
+    /* R6: no auto-resume after blur; use Resume or Escape */
   }
 
   _onVisibility() {
@@ -385,21 +463,8 @@ export class RunnerGame {
       if (this.phase === 'playing') {
         this.phase = 'paused'
         this._systemPause = true
+        this.announce('Paused.')
       }
-      this.input?.clearAll()
-      return
-    }
-    this._resumeAfterSystemPause()
-  }
-
-  _resumeAfterSystemPause() {
-    if (this._pauseFromResize) {
-      return
-    }
-    if (this.phase === 'paused' && this._systemPause) {
-      this.phase = 'playing'
-      this._systemPause = false
-      this.lastTime = performance.now()
       this.input?.clearAll()
     }
   }
@@ -408,15 +473,45 @@ export class RunnerGame {
     if (this.phase !== 'ready') {
       return
     }
+    this.audio.unlock()
+    this.audio.play('button')
     this.phase = 'playing'
     this.canvas.focus({ preventScroll: true })
+    this.announce('Game started.')
   }
 
   resumeFromPause() {
     if (this.phase === 'paused') {
       this.phase = 'playing'
+      this._systemPause = false
+      this._pauseFromResize = false
       this.lastTime = performance.now()
       this.input?.clearAll()
+      this.canvas.focus({ preventScroll: true })
+    }
+  }
+
+  pauseFromEscape() {
+    if (this.phase !== 'playing') {
+      return
+    }
+    this.phase = 'paused'
+    this._systemPause = false
+    this.input?.clearAll()
+    this.announce('Paused.')
+  }
+
+  handleEscapeAction() {
+    if (this.phase === 'ready' || this.phase === 'over') {
+      this.onExitToWorld?.()
+      return
+    }
+    if (this.phase === 'playing') {
+      this.pauseFromEscape()
+      return
+    }
+    if (this.phase === 'paused') {
+      this.resumeFromPause()
     }
   }
 
@@ -433,17 +528,19 @@ export class RunnerGame {
     const dt = frameDelta(time, this.lastTime)
     this.lastTime = time
 
+    if (this.input?.consumeEscapeEdge()) {
+      this.handleEscapeAction()
+    }
+    if (this.input?.consumeMuteEdge()) {
+      this.toggleMute()
+    }
+
     if (this.phase === 'ready') {
       if (this.input?.consumeJumpEdge()) {
         this.beginPlay()
       }
     } else if (this.phase === 'over') {
       this._handleOverInput()
-    } else if (this.phase === 'paused' && this._pauseFromResize) {
-      if (this.input?.consumeJumpEdge()) {
-        this.resumeFromPause()
-        this._pauseFromResize = false
-      }
     }
 
     this.tick(dt, time)
@@ -458,9 +555,22 @@ export class RunnerGame {
       this.runningTime += dt * 1000
     }
 
-    stepRunScoring(this.scoring, dt, integrate)
+    if (this.slowMode) {
+      stepRunScoringWithSpeed(this.scoring, dt, SLOW_SPEED_CFG, integrate)
+    } else {
+      stepRunScoring(this.scoring, dt, integrate)
+    }
+    if (
+      integrate &&
+      this.scoring.flashIterationsLeft === 3 &&
+      this._scoreFlashIterSnapshot !== 3
+    ) {
+      this.audio.play('score')
+    }
+    this._scoreFlashIterSnapshot = this.scoring.flashIterationsLeft
     updateScoreFlash(this.scoring, now)
 
+    const gapCoefficient = this.slowMode ? SLOW_GAP_COEFFICIENT : GAP_COEFFICIENT
     const axis = this.input?.getAxis() ?? { x: 0, y: 0 }
     if (integrate) {
       const newSpawned = maybeSpawnRows(this.spawner, {
@@ -469,6 +579,7 @@ export class RunnerGame {
         visibleW: this.visibleW,
         score: this.scoring.score,
         speed: this.scoring.speed,
+        gapCoefficient,
       })
       if (newSpawned.length > 0) {
         this.rows.push(...newSpawned)

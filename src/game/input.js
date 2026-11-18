@@ -15,6 +15,10 @@ const PREVENT_CODES = new Set([
   'Enter',
 ])
 
+function isModalDialogOpen() {
+  return document.querySelector('dialog[open]') != null
+}
+
 const SQRT2 = Math.SQRT2
 
 /**
@@ -41,8 +45,11 @@ export class GameInput {
     this.jumpQueued = false
     this.jumpHeld = false
     this.enterQueued = false
+    this.escapeQueued = false
+    this.muteQueued = false
     this._ignoreJumpUntilRelease = false
     this.touchAxis = { x: 0, y: 0 }
+    this.runnerShortcutsActive = false
     /** @type {'plane' | 'vertical'} */
     this.axisMode = 'plane'
     this._shouldPrevent = () => true
@@ -82,11 +89,17 @@ export class GameInput {
     }
   }
 
+  setRunnerShortcutsActive(active) {
+    this.runnerShortcutsActive = active
+  }
+
   clearAll() {
     this.held.clear()
     this.jumpQueued = false
     this.jumpHeld = false
     this.enterQueued = false
+    this.escapeQueued = false
+    this.muteQueued = false
     this.touchAxis = { x: 0, y: 0 }
   }
 
@@ -124,6 +137,20 @@ export class GameInput {
     const yieldToNative =
       (e.code === 'Space' || e.code === 'Enter') && isNativeActivatable(e.target)
     const canPrevent = this._shouldPrevent() && PREVENT_CODES.has(e.code) && !yieldToNative
+    if (e.code === 'Escape') {
+      if (!isModalDialogOpen() && this.runnerShortcutsActive) {
+        e.preventDefault()
+        this.escapeQueued = true
+      }
+      return
+    }
+    if (e.code === 'KeyM') {
+      if (this.runnerShortcutsActive && !isNativeActivatable(e.target)) {
+        e.preventDefault()
+        this.muteQueued = true
+      }
+      return
+    }
     if (canPrevent) {
       e.preventDefault()
     }
@@ -240,6 +267,22 @@ export class GameInput {
       return false
     }
     this.enterQueued = false
+    return true
+  }
+
+  consumeEscapeEdge() {
+    if (!this.escapeQueued) {
+      return false
+    }
+    this.escapeQueued = false
+    return true
+  }
+
+  consumeMuteEdge() {
+    if (!this.muteQueued) {
+      return false
+    }
+    this.muteQueued = false
     return true
   }
 

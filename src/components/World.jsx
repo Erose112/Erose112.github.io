@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { CUE_BLINK_MS, WELCOME_BLINK_MS, WELCOME_DISMISS_MS } from '../game/constants.js'
 import { Game } from '../game/Game.js'
+import {
+  formatHiLabel,
+  readHiScore,
+  readSlowMode,
+} from '../game/runner/storage.js'
 import Hud from './Hud.jsx'
 import RunnerOverlay from './RunnerOverlay.jsx'
 import TouchControls from './TouchControls.jsx'
@@ -70,16 +75,25 @@ export default function World({
   const [runnerPhase, setRunnerPhase] = useState(
     /** @type {'ready' | 'playing' | 'paused' | 'over'} */ ('ready'),
   )
+  const [runnerAnnounce, setRunnerAnnounce] = useState('')
+  const [runnerMuted, setRunnerMuted] = useState(true)
+  const [runnerSlow, setRunnerSlow] = useState(() =>
+    typeof window !== 'undefined' ? readSlowMode() : false,
+  )
+  const [runnerRmNoteDismissed, setRunnerRmNoteDismissed] = useState(false)
+  const [dinoHiLabel, setDinoHiLabel] = useState(() => formatHiLabel(readHiScore()))
   const runnerRestartRef = useRef(/** @type {HTMLButtonElement | null} */ (null))
 
   const onGameReadyRef = useRef(onGameReady)
   const onPortalEnterRef = useRef(onPortalEnter)
+  const onRunnerBackRef = useRef(onRunnerBack)
 
   useEffect(() => {
     modeRef.current = mode
     onGameReadyRef.current = onGameReady
     onPortalEnterRef.current = onPortalEnter
-  }, [mode, onGameReady, onPortalEnter])
+    onRunnerBackRef.current = onRunnerBack
+  }, [mode, onGameReady, onPortalEnter, onRunnerBack])
 
   useEffect(() => {
     if (!welcomeOpen || reduceMotion) {
@@ -158,6 +172,8 @@ export default function World({
         runnerRestartRef.current?.focus({ preventScroll: true })
       })
     }
+    game.onRunnerExit = () => onRunnerBackRef.current?.()
+    game.onRunnerAnnounce = (message) => setRunnerAnnounce(message)
     onGameReadyRef.current(game)
 
     const ro = new ResizeObserver((entries) => {
@@ -218,6 +234,12 @@ export default function World({
   }, [worldCanvasRef])
 
   useEffect(() => {
+    if (mode === 'world') {
+      setDinoHiLabel(formatHiLabel(readHiScore()))
+    }
+  }, [mode])
+
+  useEffect(() => {
     const game = gameRef.current
     if (!game) {
       return
@@ -232,6 +254,9 @@ export default function World({
       game.setLoopMode('runner')
       game.startRunner()
       setRunnerPhase(game.runner?.phase ?? 'ready')
+      setRunnerSlow(game.runner?.slowMode ?? readSlowMode())
+      setRunnerMuted(game.runner?.isMuted() ?? true)
+      setRunnerAnnounce('')
     }
   }, [mode])
 
@@ -246,6 +271,38 @@ export default function World({
     game?.runner?.restartAfterCrash()
     canvasRef.current?.focus({ preventScroll: true })
   }
+
+  const handleRunnerResume = () => {
+    gameRef.current?.runner?.resumeFromPause()
+    canvasRef.current?.focus({ preventScroll: true })
+  }
+
+  const handleRunnerToggleMute = () => {
+    const muted = gameRef.current?.runner?.toggleMute()
+    if (typeof muted === 'boolean') {
+      setRunnerMuted(muted)
+    }
+  }
+
+  const handleRunnerSlowChange = (slow) => {
+    setRunnerSlow(slow)
+    gameRef.current?.runner?.setSlowMode(slow)
+  }
+
+  const runnerAriaLabel = (() => {
+    const base =
+      'Dino Run side scroller. Move up and down with arrow keys, W and S, or the vertical touch stick.'
+    if (runnerPhase === 'ready') {
+      return `${base} Press Space to start or tap the playfield. Escape leaves.`
+    }
+    if (runnerPhase === 'playing') {
+      return `${base} Escape pauses. M toggles sound.`
+    }
+    if (runnerPhase === 'paused') {
+      return `${base} Escape or Resume continues. Back returns to the desert.`
+    }
+    return `${base} Restart or Back to world. Escape leaves.`
+  })()
 
   const cueText = (() => {
     if (!proximityId) {
@@ -266,7 +323,10 @@ export default function World({
 
   const showHud = mode === 'world' || mode === 'transition'
   const showTouch =
-    coarsePointer && (mode === 'world' || mode === 'transition')
+    coarsePointer &&
+    (mode === 'world' || mode === 'transition' || mode === 'runner')
+  const touchAxisLock = mode === 'runner' ? 'vertical' : 'plane'
+  const touchHideJump = mode === 'runner'
   const showRunnerChrome = mode === 'runner'
 
   const preventGameDefault = () => {
@@ -307,6 +367,8 @@ export default function World({
         input={gameInput}
         show={showTouch}
         shouldPreventDefault={preventGameDefault}
+        axisLock={touchAxisLock}
+        hideJump={touchHideJump}
       />
       <canvas
         ref={(node) => {
@@ -319,15 +381,21 @@ export default function World({
         width={1}
         height={1}
         tabIndex={0}
-        aria-label={
-          mode === 'runner'
-            ? 'Dino Run. Move up and down with arrow keys or W and S. Press Space to start. Escape to leave.'
-            : 'Desert game. Move with WASD or arrow keys. Press Space to jump into portals.'
-        }
+        aria-label={mode === 'runner' ? runnerAriaLabel : 'Desert game. Move with WASD or arrow keys. Press Space to jump into portals.'}
         onPointerDown={() => {
           canvasRef.current?.focus({ preventScroll: true })
           if (mode === 'runner' && coarsePointer) {
             gameInput?.queueTouchJump()
+          }
+        }}
+        onPointerUp={() => {
+          if (mode === 'runner') {
+            gameInput?.releaseTouchJump()
+          }
+        }}
+        onPointerCancel={() => {
+          if (mode === 'runner') {
+            gameInput?.releaseTouchJump()
           }
         }}
       />
@@ -358,14 +426,26 @@ export default function World({
           className="portal-label portal-label--dino font-display absolute left-0 top-0 text-center text-ink"
         >
           <span className="block whitespace-nowrap">DINO RUN</span>
+          <span className="mt-1 block whitespace-nowrap text-[0.85em]">{dinoHiLabel}</span>
         </div>
       </div>
+      <p className="sr-only" aria-live="polite">
+        {runnerAnnounce}
+      </p>
       {showRunnerChrome && onRunnerBack ? (
         <RunnerOverlay
           onBack={onRunnerBack}
           onRestart={handleRunnerRestart}
+          onResume={handleRunnerResume}
+          onToggleMute={handleRunnerToggleMute}
+          onSlowChange={handleRunnerSlowChange}
           coarsePointer={coarsePointer}
           phase={runnerPhase}
+          muted={runnerMuted}
+          slowMode={runnerSlow}
+          reduceMotion={reduceMotion}
+          reducedMotionNoteDismissed={runnerRmNoteDismissed}
+          onDismissReducedMotionNote={() => setRunnerRmNoteDismissed(true)}
           restartRef={runnerRestartRef}
         />
       ) : null}

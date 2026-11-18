@@ -12,9 +12,9 @@ Sprites, sound effects, and the read-only TypeScript excerpts under `reference/d
 | --- | --- |
 | `public/sprites/100-offline-sprite.png` | 1× sprite sheet; loaded by the canvas game and exit button crop |
 | `public/sprites/200-offline-sprite.png` | 2× sheet shipped for reference; not loaded by the app |
-| `public/sounds/button-press.mp3` | Optional (not played in the current build) |
-| `public/sounds/score-reached.mp3` | Optional (not played in the current build) |
-| `public/sounds/hit.mp3` | Optional (not played in the current build) |
+| `public/sounds/button-press.mp3` | Dino Run start/restart (muted by default; M toggles) |
+| `public/sounds/score-reached.mp3` | Dino Run each 100 points |
+| `public/sounds/hit.mp3` | Dino Run crash |
 | `reference/dino_game/` | Read-only reference; not imported at runtime |
 
 The HTML document preloads `public/sprites/100-offline-sprite.png` so the desert renderer can start after `Image.decode()`.

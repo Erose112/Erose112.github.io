@@ -27,6 +27,7 @@ import {
   updatePterodactyl,
   updateScreenClouds,
 } from './entities.js'
+import { RunnerAudio } from './runner/audio.js'
 import { RunnerGame } from './runner/RunnerGame.js'
 import { buildGroundCanvas, drawGroundLayer } from './ground.js'
 import { GameInput } from './input.js'
@@ -104,6 +105,11 @@ export class Game {
     this.runner = null
     /** @type {(() => void) | null} */
     this.onRunnerGameOver = null
+    /** @type {(() => void) | null} */
+    this.onRunnerExit = null
+    /** @type {((message: string) => void) | null} */
+    this.onRunnerAnnounce = null
+    this.runnerAudio = new RunnerAudio()
     this.inputLocked = false
     this.input = null
     this.activePortal = null
@@ -137,9 +143,13 @@ export class Game {
         input: this.input,
         cloudSprite: this.cloudSprite,
         reduceMotion: this.reduceMotion,
+        audio: this.runnerAudio,
         onGameOver: () => this.onRunnerGameOver?.(),
+        onExitToWorld: () => this.onRunnerExit?.(),
+        onAnnounce: (message) => this.onRunnerAnnounce?.(message),
       })
     }
+    this.input?.setRunnerShortcutsActive(true)
     const w = this.canvas.clientWidth || window.innerWidth
     const h = this.canvas.clientHeight || window.innerHeight
     this.runner.resize(this.pixelBox, w, h)
@@ -148,6 +158,7 @@ export class Game {
   }
 
   stopRunner() {
+    this.input?.setRunnerShortcutsActive(false)
     this.runner?.destroy()
     this.runner = null
     const w = this.canvas.clientWidth || window.innerWidth
@@ -253,7 +264,7 @@ export class Game {
     this.input = new GameInput()
     this.input.attach(() => {
       if (this.loopMode === 'runner') {
-        return this.runner?.wantsKeyboardCapture() ?? false
+        return this.runner?.wantsRunnerPreventDefault() ?? false
       }
       return this._isLoopActive()
     })

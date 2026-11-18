@@ -376,3 +376,31 @@
 - Telegraph and ptero flap respect `reduceMotion` (frozen); R6 reduced-motion note should mention telegraph freeze.
 - Touch vertical stick — bot already targets safe slot; human play must dodge shadow, not whole opening.
 - No audio on bird telegraph (visual-only per plan).
+
+## R6 — Touch, audio, slow mode, focus (completed)
+
+### Built
+- `src/game/runner/audio.js` — `RunnerAudio` with `button-press`, `hit`, `score-reached` (muted default, unlock on gesture, `play()` swallows errors).
+- `src/game/runner/storage.js` — `hiSlow`, `muted`, `slow` keys + memory fallbacks; gate label reads `.hi` only via `readHiScore()`.
+- `src/game/input.js` — `Escape` / `KeyM` edges, `setRunnerShortcutsActive`, Escape yields to `dialog[open]`; `wantsRunnerPreventDefault` path in `Game.js`.
+- `src/game/runner/RunnerGame.js` — Esc pause/resume/exit, explicit Resume (no blur auto-resume), slow ramp (`SLOW_SPEED_*`, `SLOW_GAP_COEFFICIENT` **0.6**), separate `writeHiSlowScore`, live `onAnnounce`, sfx hooks.
+- `src/components/TouchControls.jsx` — `axisLock="vertical"`, `hideJump` in runner.
+- `src/components/RunnerOverlay.jsx` — Resume, mute, slow toggle, reduced-motion dismissible note, runner controls top-safe-area.
+- `src/components/World.jsx` — runner touch, `aria-live` runner status, dynamic canvas `aria-label`, dino gate **HI** line, mute/slow UI state.
+
+### Deviations
+- **R3 restart spin** on `RunnerRestartButton` left as-is (8-frame spin); plan R3 preferred frame 0 only — not reworked in R6.
+- **Slow toggle while paused** updates HUD HI and persisted `slow` but does not swap the in-flight speed table until **ready** or **restart** (avoids mid-run inconsistent ramp).
+- **Muted announcement** on M-toggle speaks “Sound on/off” via the same live region as run events.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/runner/constants.js` | `SLOW_SPEED_START` **4.2**, `SLOW_SPEED_MAX` **9**, `SLOW_SPEED_ACCEL` **0.0005**, `SLOW_GAP_COEFFICIENT` **0.6** |
+| `src/game/runner/storage.js` | `HI_KEY`, `HI_SLOW_KEY`, `MUTED_KEY`, `SLOW_KEY` |
+| `src/components/TouchControls.jsx` | `axisLock`, `hideJump`, `JOYSTICK_DEADZONE` (parent) |
+
+### For R7+
+- Crop/dpr audit on runner HUD and game-over strip; confirm restart strip offsets on screen.
+- `THIRD_PARTY_NOTICES.md` — mark sounds as in use and list runner atlas crops.
+- North desert ground/props regression check after south-band work (R1).
