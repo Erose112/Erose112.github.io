@@ -6,7 +6,12 @@
     <link rel="canonical" href="https://erose112.github.io/" />
     <title>Redirecting…</title>
     <script>
-      window.location.replace('https://erose112.github.io/')
+      ;(function () {
+        var target = 'https://erose112.github.io/'
+        var hash = window.location.hash || ''
+        var search = window.location.search || ''
+        window.location.replace(target + search + hash)
+      })()
     </script>
   </head>
   <body>
