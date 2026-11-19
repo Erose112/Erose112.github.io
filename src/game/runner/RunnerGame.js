@@ -307,8 +307,8 @@ export class RunnerGame {
     const { bufferW, bufferH } = resolveBufferSize(clientW, clientH, dpr, pixelBox)
     const S = computeRunnerScale(bufferW, bufferH)
 
-    this.canvas.style.width = `${clientW}px`
-    this.canvas.style.height = `${clientH}px`
+    this.canvas.style.width = '100%'
+    this.canvas.style.height = '100%'
     this.canvas.width = bufferW
     this.canvas.height = bufferH
 

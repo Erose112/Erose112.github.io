@@ -1,5 +1,4 @@
 import { experienceSection } from '../content.js'
-import ExpandableDescription from './ExpandableDescription.jsx'
 
 export default function ExperienceSection() {
   return (
@@ -12,16 +11,26 @@ export default function ExperienceSection() {
         {experienceSection.title}
       </h2>
 
-      <div className="mt-6 space-y-8">
+      <div className="experience-list mt-6 space-y-10">
         {experienceSection.roles.map((role) => (
-          <div key={`${role.title}-${role.meta}`} className="max-w-5xl">
-            <p className="section-copy">{role.title}</p>
-            <p className="section-meta mt-1 opacity-90">{role.meta}</p>
-            {role.tech?.length ? (
-              <p className="section-meta mt-1 opacity-90">{role.tech.join(' · ')}</p>
-            ) : null}
-            <ExpandableDescription>{role.description}</ExpandableDescription>
-          </div>
+          <article
+            key={`${role.role}-${role.company}-${role.dates}`}
+            className="experience-role"
+          >
+            <div className="experience-details">
+              <h3 className="experience-title">{role.role}</h3>
+              <p className="experience-company">{role.company}</p>
+              {role.tech?.length ? (
+                <p className="experience-tech">{role.tech.join(' · ')}</p>
+              ) : null}
+              <p className="experience-description">{role.description}</p>
+            </div>
+
+            <div className="experience-when pt-0.5">
+              <p className="experience-dates">{role.dates}</p>
+              <p className="experience-location">{role.location}</p>
+            </div>
+          </article>
         ))}
       </div>
     </section>

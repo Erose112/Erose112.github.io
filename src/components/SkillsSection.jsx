@@ -11,7 +11,7 @@ export default function SkillsSection() {
         {skillsSection.title}
       </h2>
 
-      <div className="mt-6 space-y-4 max-w-5xl">
+      <div className="skills-copy mt-6 space-y-4">
         {skillsSection.groups.map((group) => (
           <p key={group.label} className="section-copy">
             <span className="font-bold">{group.label}:</span>{' '}

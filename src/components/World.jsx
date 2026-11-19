@@ -47,9 +47,11 @@ export default function World({
   onPortalEnter,
   onRunnerBack,
 }) {
+  const shellRef = useRef(null)
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const observerRef = useRef(null)
+  const pixelBoxRef = useRef(null)
   const labelRefs = useRef({})
   const modeRef = useRef(mode)
   const [proximityId, setProximityId] = useState(null)
@@ -121,8 +123,8 @@ export default function World({
     const tick = () => {
       const game = gameRef.current
       if (game) {
-        const head = game.getDinoScreenHead()
-        setWelcomeAnchor({ x: head.x, y: head.y - 88 })
+        const feet = game.getDinoScreenFeet()
+        setWelcomeAnchor({ x: feet.x, y: feet.y + 48 })
       }
       raf = requestAnimationFrame(tick)
     }
@@ -176,30 +178,56 @@ export default function World({
     game.onRunnerAnnounce = (message) => setRunnerAnnounce(message)
     onGameReadyRef.current(game)
 
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry) {
-        game.resize()
+    const syncGameSize = () => {
+      const c = canvasRef.current
+      if (!c) {
         return
       }
-      const cssW = entry.contentBoxSize?.[0]?.inlineSize ?? canvas.clientWidth
-      const cssH = entry.contentBoxSize?.[0]?.blockSize ?? canvas.clientHeight
-      const pixelBox = entry.devicePixelContentBoxSize?.[0]
+      const cssW = c.clientWidth
+      const cssH = c.clientHeight
+      if (cssW < 1 || cssH < 1) {
+        return
+      }
+      const pixelBox = pixelBoxRef.current
       if (pixelBox) {
-        game.resize(
-          { bufferW: pixelBox.inlineSize, bufferH: pixelBox.blockSize },
-          cssW,
-          cssH,
-        )
+        game.resize(pixelBox, cssW, cssH)
       } else {
         game.resize(null, cssW, cssH)
       }
+    }
+
+    const pixelRo = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      const pixelBox = entry?.devicePixelContentBoxSize?.[0]
+      if (pixelBox) {
+        pixelBoxRef.current = {
+          bufferW: pixelBox.inlineSize,
+          bufferH: pixelBox.blockSize,
+        }
+      }
+      syncGameSize()
+    })
+
+    const shellRo = new ResizeObserver(() => {
+      syncGameSize()
     })
 
     try {
-      ro.observe(canvas, { box: 'device-pixel-content-box' })
+      pixelRo.observe(canvas, { box: 'device-pixel-content-box' })
     } catch {
-      ro.observe(canvas)
+      pixelRo.observe(canvas)
+    }
+
+    const shell = shellRef.current
+    if (shell) {
+      shellRo.observe(shell)
+    }
+
+    const ro = {
+      disconnect() {
+        pixelRo.disconnect()
+        shellRo.disconnect()
+      },
     }
     observerRef.current = ro
 
@@ -358,7 +386,7 @@ export default function World({
     .join(' ')
 
   return (
-    <div className={shellClass}>
+    <div ref={shellRef} className={shellClass}>
       <p className="sr-only" aria-live="polite">
         {exitAnnouncement}
       </p>
@@ -491,8 +519,12 @@ function WelcomeBanner({ reduceMotion, welcomeBlink, title, body, anchor }) {
   const opacity = reduceMotion || welcomeBlink ? 1 : 0.2
   return (
     <h1
-      className="welcome-banner font-display pointer-events-none absolute z-20 w-[min(100%,20rem)] -translate-x-1/2 -translate-y-full border-2 border-ink bg-desert px-3 py-2 text-center text-xs text-ink transition-none sm:text-base"
-      style={{ left: anchor.x, top: anchor.y }}
+      className="portal-label welcome-banner font-display pointer-events-none absolute z-20 w-[min(100%,20rem)] border-2 border-ink bg-desert px-3 py-2 text-center text-xs text-ink transition-none sm:text-base"
+      style={{
+        left: anchor.x,
+        top: anchor.y,
+        transform: 'translate(-50%, 0)',
+      }}
     >
       <span className="block" style={{ opacity }} aria-live="polite">
         {title}

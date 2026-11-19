@@ -152,7 +152,7 @@ function buildPortalGate(def, opts = {}) {
 
 /** @returns {PortalGate[]} */
 export function createPortals() {
-  const sectionGates = PORTAL_DEFS.map((def) => buildPortalGate(def, { noFlanks: false }))
+  const sectionGates = PORTAL_DEFS.map((def) => buildPortalGate(def, { noFlanks: true }))
   const dinoGate = buildPortalGate(DINO_RUN_PORTAL_DEF, {
     returnNorth: true,
     noFlanks: true,
@@ -663,10 +663,7 @@ export function drawGatePterodactyl(ctx, img, gate) {
  * @param {CanvasImageSource} img
  * @param {PortalGate} gate
  */
-export function drawDinoGateOpeningStrip(ctx, img, gate) {
-  if (gate.id !== 'dino') {
-    return
-  }
+export function drawGateOpeningStrip(ctx, img, gate) {
   const { x: hsx, y: hsy, w: hw, h: hh } = ATLAS.horizon
   const stripW = GATE_GAP
   const drawX = Math.round(gate.centerX - stripW / 2)
@@ -879,12 +876,12 @@ export function drawSortedActors(
         draw: () => drawPortalPart(ctx, img, gate, part),
       })
     }
+    items.push({
+      footY: gate.footY,
+      layer: DRAW_LAYER_CACTUS,
+      draw: () => drawGateOpeningStrip(ctx, img, gate),
+    })
     if (gate.id === 'dino') {
-      items.push({
-        footY: gate.footY,
-        layer: DRAW_LAYER_CACTUS,
-        draw: () => drawDinoGateOpeningStrip(ctx, img, gate),
-      })
       if (gate.gatePtero) {
         const pos = dinoGatePteroPosition(gate)
         const pteroH = ATLAS.pterodactyl.h

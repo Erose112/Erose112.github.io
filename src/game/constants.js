@@ -1,21 +1,25 @@
 import { assetUrl } from '../assetUrl.js'
 
-export const WORLD_WIDTH = 960
-export const WORLD_HEIGHT = 780
+export const WORLD_WIDTH = 720
+export const WORLD_HEIGHT = 660
 export const SKY_BOTTOM = 100
 export const GROUND_TOP = 120
 /** North desert band unchanged when extending south (PLAN-DINO-RUN §6). */
 export const GROUND_NORTH_BOTTOM = 540
-export const GROUND_BOTTOM = 760
+export const GROUND_BOTTOM = 640
 export const WALK_LEFT = 24
-export const WALK_RIGHT = 936
+export const WALK_RIGHT = 696
 
 export const DESERT_COLOR = '#f7f7f7'
 export const DUNE_TINT = '#ebebeb'
 
 export const WORLD_SEED = 0x657468616e
 
-export const SPAWN = { x: 480, y: 430, facingRight: true }
+export const SPAWN = {
+  x: WORLD_WIDTH / 2,
+  y: Math.round(WORLD_HEIGHT / 2),
+  facingRight: true,
+}
 
 /** Gate geometry (PLAN §4). */
 export const GATE_GAP = 48
@@ -32,18 +36,29 @@ export const WIPE_MS = 450
 export const WIPE_BLINK_STEPS = 3
 export const JOYSTICK_DEADZONE = 0.2
 
-/** Opening centers; return point is same x, y + PORTAL_RETURN_OFFSET_Y. */
-export const PORTAL_DEFS = [
-  { id: 'about', x: 220, y: 300, label: 'ABOUT', path: true },
-  { id: 'experience', x: 480, y: 190, label: 'EXPERIENCE', path: true },
-  { id: 'projects', x: 740, y: 300, label: 'PROJECTS', path: true },
+/** Section gates: offsets from `SPAWN` (triangle: left / north / right). */
+const SECTION_PORTAL_LAYOUT = [
+  { id: 'about', dx: -120, dy: -30, label: 'ABOUT' },
+  { id: 'experience', dx: 0, dy: -90, label: 'EXPERIENCE' },
+  { id: 'projects', dx: 120, dy: -30, label: 'PROJECTS' },
 ]
+
+/** Opening centers; return point is same x, y + PORTAL_RETURN_OFFSET_Y. */
+export const PORTAL_DEFS = SECTION_PORTAL_LAYOUT.map(
+  ({ id, dx, dy, label }) => ({
+    id,
+    x: SPAWN.x + dx,
+    y: SPAWN.y + dy,
+    label,
+    path: true,
+  }),
+)
 
 /** Dino Run gate: no path dots, not in `visited` (PLAN-DINO-RUN §6). */
 export const DINO_RUN_PORTAL_DEF = {
   id: 'dino',
-  x: 480,
-  y: 660,
+  x: SPAWN.x,
+  y: SPAWN.y + 190,
   label: 'DINO RUN',
   path: false,
 }
@@ -66,8 +81,8 @@ export const CLOUD_SPEED_MAX = 30
 export const CLOUD_RESPAWN_GAP_MIN = 80
 export const CLOUD_RESPAWN_GAP_MAX = 360
 
-export const PROP_COUNT_MIN = 14
-export const PROP_COUNT_MAX = 20
+export const PROP_COUNT_MIN = 10
+export const PROP_COUNT_MAX = 14
 /** South extension band (`WORLD_SEED + 11`); north band keeps `PROP_COUNT_*`. */
 export const SOUTH_PROP_COUNT_MIN = 6
 export const SOUTH_PROP_COUNT_MAX = 10
@@ -79,7 +94,8 @@ export const SOUTH_GROUND_TUFT_MIN = 16
 export const SOUTH_GROUND_TUFT_MAX = 28
 export const SOUTH_GROUND_DUNE_MIN = 3
 export const SOUTH_GROUND_DUNE_MAX = 6
-export const PROP_MIN_SPACING = 56
+export const PROP_BOX_GAP_PX = 16
+export const SPAWN_PROP_CLEAR_PX = 88
 export const GATE_OPENING_CLEAR_PX = 90
 export const PROP_PATH_CLEAR_PX = 40
 

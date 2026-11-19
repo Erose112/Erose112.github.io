@@ -432,3 +432,31 @@
 ### For post-R7
 - All PLAN-DINO-RUN milestones through R7 are complete; optional follow-ups in plan §11 (jump dodge, ready-on-restart, visible HI n/3, night invert, audio files on disk) remain product choices, not blockers.
 - Visual dpr **1.25** / **1.5** checks are browser-only (integer `S` and restart crop sizing).
+
+## Post-R7 — Plain-first UX, content, world, deploy (completed)
+
+### Built
+- **Default route:** empty / `#` → `#plain` (`hashBody`, `replaceState` on load). Desert is `#world` via **ENTER WORLD** (was **PLAY GAME** / game-first).
+- **HUD:** **PORTFOLIO** (was **SKIP GAME**); top-right LinkedIn control (pixel icon + label) replaces the permanent **ETHAN ROSE** name chip.
+- **Section return:** `sectionReturn` tracks whether a section was opened from desert or plain; exit label is **Back to desert** or **Back to page**; plain scroll position restored after Experience / Projects dialogs.
+- **Plain / section typography:** `@fontsource/source-serif-4` as `--font-plain` for `.plain-page` and `.section-dialog` copy (Press Start 2P still for titles / game chrome).
+- **About:** highlights grid, `aboutCurrently`, restored `LogoMarquee` (`aboutMarqueeLogos`); hobbies as a chip list.
+- **Experience:** roles use `role` / `company` / `location` / `dates` with two-column layout; removed `ExpandableDescription` (full copy always shown).
+- **World layout:** `720×660` game px, walk `x 24–696`, `GROUND_BOTTOM` **640**, spawn centered; section gates at spawn offsets (triangle), posts only (no flanks); Dino Run gate at spawn + **190** y; opening horizon strip on all gates.
+- **Props:** count **10–14**; footprint box gap `PROP_BOX_GAP_PX` **16** (replaces `PROP_MIN_SPACING`); `SPAWN_PROP_CLEAR_PX` **88**.
+- **Welcome banner:** anchors below dino feet (`getDinoScreenFeet`), same transform style as portal labels.
+- **Resize:** canvas `width/height: 100%`; shell + device-pixel `ResizeObserver`s; `Game.resize` keeps last `pixelBox` when only CSS size changes.
+- **Deploy:** `vite.config.js` `base: '/'`; canonical / OG URLs → `https://erose112.github.io/`; `deploy/personal-website-redirect/` points at the user-pages root.
+
+### Deviations
+- **Game-first default** from PLAN §11 is reversed: plain is the landing surface; desert is opt-in.
+- **HI n/3** HUD counter removed from the desert chrome (LinkedIn occupies the top-right slot).
+- **Qflow** is no longer a separate Experience role; it lives in About currently / projects.
+- **Milestone 7 note** that `LogoMarquee` was left out is obsolete — marquee is back on About.
+
+### Tunable constants (file → name)
+| File | Constants |
+|------|-----------|
+| `src/game/constants.js` | `WORLD_*`, `WALK_*`, `GROUND_*`, `SPAWN`, `SECTION_PORTAL_LAYOUT` / `PORTAL_DEFS`, `DINO_RUN_PORTAL_DEF`, `PROP_COUNT_*`, `PROP_BOX_GAP_PX`, `SPAWN_PROP_CLEAR_PX` |
+| `src/index.css` | `--font-plain`, `.experience-*`, `.plain-page` / `.section-dialog` copy sizes |
+| `vite.config.js` | `base` (`/`) |
