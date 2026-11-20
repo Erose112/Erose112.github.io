@@ -16,7 +16,7 @@ const PORTAL_FOCUS_NAMES = {
 /** @param {string} raw */
 function hashBody(raw) {
   if (!raw || raw === '#') {
-    return 'world'
+    return 'plain'
   }
   return raw.replace(/^#/, '')
 }
@@ -50,6 +50,9 @@ export default function App() {
   const [visited, setVisited] = useState(() => new Set())
   /** @type {['none' | 'enter' | 'exit', typeof useState]} */
   const [wipe, setWipe] = useState('none')
+  /** @type {'world' | 'plain' | null} */
+  const [sectionReturn, setSectionReturn] = useState(null)
+  const [plainScrollTop, setPlainScrollTop] = useState(/** @type {number | null} */ (null))
 
   const dialogRef = useRef(/** @type {HTMLDialogElement | null} */ (null))
   const worldCanvasRef = useRef(/** @type {HTMLCanvasElement | null} */ (null))
@@ -65,6 +68,8 @@ export default function App() {
   const lastReturnPortalRef = useRef(
     /** @type {'about' | 'experience' | 'projects' | 'dino' | null} */ (null),
   )
+  const sectionReturnRef = useRef(/** @type {'world' | 'plain' | null} */ (null))
+  const plainScrollRef = useRef(0)
   const wipeTimerRef = useRef(0)
   const [exitAnnouncement, setExitAnnouncement] = useState('')
   const [focusCanvasEpoch, setFocusCanvasEpoch] = useState(0)
@@ -77,6 +82,10 @@ export default function App() {
   useEffect(() => {
     modeRef.current = mode
   }, [mode])
+
+  useEffect(() => {
+    sectionReturnRef.current = sectionReturn
+  }, [sectionReturn])
 
   const clearWipeTimer = useCallback(() => {
     if (wipeTimerRef.current) {
@@ -117,14 +126,21 @@ export default function App() {
       }
       setMode('world')
       setSection(null)
+      setSectionReturn(null)
       setWipe('none')
       if (announcePortal) {
         const label = PORTAL_FOCUS_NAMES[announcePortal] ?? announcePortal
         setExitAnnouncement(`Back in the desert, at the ${label} portal.`)
       }
+      const canvas = worldCanvasRef.current
+      if (game && canvas) {
+        requestAnimationFrame(() => {
+          game.resize(null, canvas.clientWidth, canvas.clientHeight)
+        })
+      }
       focusWorldCanvas()
     },
-    [focusWorldCanvas],
+    [focusWorldCanvas, worldCanvasRef],
   )
 
   const enterRunner = useCallback(
@@ -151,12 +167,17 @@ export default function App() {
     const game = gameRef.current
 
     if (body === 'plain') {
+      const restorePlainScroll = sectionReturnRef.current === 'plain'
       closeSectionDialog()
       game?.setLoopMode('plain')
       setMode('plain')
       setSection(null)
       setWipe('none')
+      setSectionReturn(null)
       lastReturnPortalRef.current = null
+      if (restorePlainScroll) {
+        setPlainScrollTop(plainScrollRef.current)
+      }
       return
     }
 
@@ -168,6 +189,11 @@ export default function App() {
 
     if (isSectionId(body)) {
       lastReturnPortalRef.current = body
+      const returnTo =
+        sectionReturnRef.current ??
+        (modeRef.current === 'plain' ? 'plain' : 'world')
+      sectionReturnRef.current = returnTo
+      setSectionReturn(returnTo)
       setSection(body)
       setMode('section')
       setVisited((prev) => {
@@ -179,7 +205,7 @@ export default function App() {
         return next
       })
       game?.setLoopMode('section')
-      if (!enteringFromHopRef.current) {
+      if (returnTo === 'world' && !enteringFromHopRef.current) {
         game?.clearTransitionFreeze()
         game?.placeDinoAtReturn(body)
       }
@@ -261,11 +287,36 @@ export default function App() {
     }
     pendingEnterRef.current = id
     lastReturnPortalRef.current = id
+    sectionReturnRef.current = 'world'
+    setSectionReturn('world')
     game.setLoopMode('transition')
     game.setInputLocked(true)
     game.beginEnterTransition()
     setMode('transition')
   }, [])
+
+  const handleOpenSectionFromPlain = useCallback(
+    (id) => {
+      const main = document.querySelector('.plain-page')
+      plainScrollRef.current = main instanceof HTMLElement ? main.scrollTop : 0
+      sectionReturnRef.current = 'plain'
+      setSectionReturn('plain')
+      pushedEntryRef.current = true
+      window.history.pushState(null, '', `#${id}`)
+      syncFromLocation()
+    },
+    [syncFromLocation],
+  )
+
+  const navigateToPlainFromPushedEntry = useCallback(() => {
+    if (pushedEntryRef.current) {
+      pushedEntryRef.current = false
+      window.history.back()
+      return
+    }
+    window.history.replaceState(null, '', '#plain')
+    syncFromLocation()
+  }, [syncFromLocation])
 
   const registerApexHandler = useCallback(
     (game) => {
@@ -308,26 +359,40 @@ export default function App() {
     exitBusyRef.current = true
     lastReturnPortalRef.current = body
 
+    clearWipeTimer()
+    setWipe('none')
+
+    if (sectionReturnRef.current === 'plain') {
+      navigateToPlainFromPushedEntry()
+      exitBusyRef.current = false
+      return
+    }
+
     const game = gameRef.current
     game?.placeDinoAtReturn(body)
     game?.clearTransitionFreeze()
     game?.setLoopMode('transition')
     setMode('transition')
-
-    clearWipeTimer()
-    const finish = () => {
-      navigateToWorldFromPushedEntry()
-      exitBusyRef.current = false
-    }
-
-    setWipe('none')
-    finish()
-  }, [clearWipeTimer, navigateToWorldFromPushedEntry])
+    navigateToWorldFromPushedEntry()
+    exitBusyRef.current = false
+  }, [
+    clearWipeTimer,
+    navigateToPlainFromPushedEntry,
+    navigateToWorldFromPushedEntry,
+  ])
 
   const handleRunnerBack = useCallback(() => {
     lastReturnPortalRef.current = 'dino'
     navigateToWorldFromPushedEntry()
   }, [navigateToWorldFromPushedEntry])
+
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash || hash === '#') {
+      window.history.replaceState(null, '', '#plain')
+    }
+    syncFromLocation()
+  }, [syncFromLocation])
 
   useEffect(() => {
     const onNav = () => syncFromLocation()
@@ -359,7 +424,9 @@ export default function App() {
     focusWorldCanvas()
   }, [syncFromLocation, focusWorldCanvas])
 
-  const showWorld = mode !== 'plain'
+  const sectionFromPlain = mode === 'section' && sectionReturn === 'plain'
+  const showPlain = mode === 'plain' || sectionFromPlain
+  const showWorld = mode !== 'plain' && !sectionFromPlain
 
   return (
     <>
@@ -376,11 +443,20 @@ export default function App() {
           onRunnerBack={handleRunnerBack}
         />
       ) : null}
-      {mode === 'plain' ? <PlainPage onPlayGame={handlePlayGame} /> : null}
+      {showPlain ? (
+        <PlainPage
+          onPlayGame={handlePlayGame}
+          onOpenSection={handleOpenSectionFromPlain}
+          restoreScrollTop={plainScrollTop}
+        />
+      ) : null}
       <SectionFrame
         section={section}
         dialogRef={dialogRef}
         onClose={handleDialogClose}
+        exitLabel={
+          sectionReturn === 'plain' ? 'Back to page' : 'Back to desert'
+        }
       />
     </>
   )

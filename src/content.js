@@ -7,7 +7,7 @@ export const chromiumAttribution = {
   licenseHref: 'https://chromium.googlesource.com/chromium/src/+/main/LICENSE',
 }
 
-const SITE_ORIGIN = 'https://erose112.github.io/portfolio-website'
+const SITE_ORIGIN = 'https://erose112.github.io'
 
 export const seo = {
   title: 'Ethan Rose — Software Developer',
@@ -21,12 +21,6 @@ export const site = {
   name: 'Ethan Rose',
   intro:
     'I’m a third-year Computing student at Queen’s University. I’m seeking a 12–16 month software development co-op starting May 2027.',
-  aboutLabel: 'About',
-  aboutItems: [
-    'I like building software that real people use, and finding interesting problems that sit at the intersection of systems building and applied math.',
-    'Right now I’m working on Qflow, a platform I co-founded with over 5,000 undergraduate Queen’s users.',
-    'I’m also on the Queen’s Rocket Engineering Team building HAVOC.',
-  ],
   socialIntro: 'Find me on LinkedIn and GitHub:',
   linkedIn: {
     label: 'LinkedIn',
@@ -43,9 +37,44 @@ export const site = {
     href: 'mailto:ethan.rose.to@gmail.com',
   },
   hobbiesTitle: 'Outside of work',
-  hobbiesBody:
-    'I enjoy skiing, playing guitar, mountain biking, volleyball, reading, and hanging out with friends!',
+  hobbies: [
+    'Skiing',
+    'Guitar',
+    'Mountain biking',
+    'Volleyball',
+    'Reading',
+  ],
 }
+
+export const aboutHighlights = [
+  { value: '5,000+', label: 'Users Serviced' },
+  { value: 'May 2027', label: 'Co-op Target' },
+  { value: "Dean's List", label: '2024–2026' },
+]
+
+export const aboutCurrently = [
+  'Co-founding Qflow and maintaining the degree planning tool',
+  'Building HAVOC fault injection for Queen’s Rocket Engineering',
+  'Full-stack development on MEMOTEXT’s FORT student mental-health platform',
+]
+
+export const aboutMarqueeLogos = [
+  {
+    src: assetUrl('qflow-image.png'),
+    alt: 'Qflow',
+    href: 'https://qflow.pooria.dev/',
+  },
+  {
+    src: assetUrl('qret-image.webp'),
+    alt: 'Queen’s Rocket Engineering Team',
+    href: 'https://github.com/Erose112/ctl-havoc',
+  },
+  {
+    src: assetUrl('favicon.png'),
+    alt: 'Ethan Rose',
+    href: 'https://github.com/Erose112',
+  },
+]
 
 export const educationSection = {
   title: 'Education:',
@@ -70,51 +99,54 @@ export const skillsSection = {
   ],
 }
 
-// Reverse-chronological. Move the two TODO roles to match their start dates.
+// Reverse-chronological.
 export const experienceSection = {
-  title: 'Experience:',
+  title: 'Experience',
   roles: [
     {
-      title: 'Software Development Intern — MEMOTEXT Corporation',
-      meta: 'Toronto, ON (Remote) · May 2026 – August 2026',
+      role: 'Software Development Intern',
+      company: 'MEMOTEXT Corporation',
+      location: 'Toronto, ON (Remote)',
+      dates: 'May 2026 – August 2026',
       tech: ['Laravel', 'React', 'Inertia.js', 'Next.js', 'WordPress'],
-      description: `I was the sole full-stack developer on FORT, a mental health platform commissioned by the University Health Network for Queen’s students. The product launched in September 2026 through a pilot course, IDIS 199. I worked closely with the project manager and UHN’s team to integrate a resource recommendation API, and I built both the Admin Console and the Student Portal using Laravel, React, and Inertia.js. I also rebuilt four pages of the company website in Next.js with incremental static regeneration, pulling content from WordPress.`,
+      description: `Sole full-stack developer on FORT, a UHN-commissioned mental health platform for Queen’s students that launched in a September 2026 pilot (IDIS 199). Built the Admin Console and Student Portal, integrated a resource recommendation API with UHN’s team, and rebuilt four company site pages in Next.js with ISR from WordPress.`,
     },
     {
-      title: 'Qflow', 
-      meta: 'Kingston, ON · August 2026 - Present',
-      tech: ['Python', 'MySQL', 'MongoDB', 'FastAPI', 'React'],
-      description: `I co-founded Qflow, a course scheduling and degree planning tool used by over 5,000 Queen’s undergraduates. I implement and maintain the degree planning tool and manage the general members.`,
-    },
-    {
-      title: 'Avionics Team — Queen’s Rocket Engineering Team', 
-      meta: 'Kingston, ON · September 2026 - Present',
+      role: 'Avionics Team',
+      company: 'Queen’s Rocket Engineering Team',
+      location: 'Kingston, ON',
+      dates: 'September 2026 – Present',
       tech: ['Docker', 'Go', 'Network Fault Simulation'],
-      description: `I’m working on the redesign of a fault injection tool for the team’s launch control stack. I previously redid the team’s website.`,
+      description: `Redesigning a fault-injection tool for the team’s launch control stack. Previously rebuilt the team website.`,
     },
     {
-      title: 'Teaching Assistant — C Programming, Queen’s University',
-      meta: 'Kingston, ON · September 2025 – November 2025',
-      tech: ['C'],
-      description: `I led weekly C tutorials covering pointers, memory management, and data structures for more than 200 first-year students, and graded their assignments throughout the term.`,
+      role: 'Teaching Assistant — C Programming',
+      company: 'Queen’s University',
+      location: 'Kingston, ON',
+      dates: 'September 2025 – November 2025',
+      description: `Led weekly C tutorials on pointers, memory, and data structures for 200+ first-years, and graded assignments through the term.`,
     },
     {
-      title: 'Data Automation Intern — SLR Consulting',
-      meta: 'Toronto, ON (Remote, Part-Time) · June 2025 – August 2025',
+      role: 'Data Automation Intern',
+      company: 'SLR Consulting',
+      location: 'Toronto, ON (Remote, Part-Time)',
+      dates: 'June 2025 – August 2025',
       tech: ['JavaScript', 'Office Scripts', 'Power Automate', 'Excel'],
-      description: `I created JavaScript Office Scripts to restructure Excel data as part of a Power Automate workflow, including error handling so the pipeline could run reliably without constant manual fixes.`,
+      description: `Built Office Scripts that restructure Excel data inside a Power Automate pipeline, with error handling so the workflow runs without constant manual fixes.`,
     },
     {
-      title: 'Software Development Intern — MEMOTEXT Corporation',
-      meta: 'Toronto, ON (Remote, Part-Time) · May 2025 – August 2025',
+      role: 'Software Development Intern',
+      company: 'MEMOTEXT Corporation',
+      location: 'Toronto, ON (Remote, Part-Time)',
+      dates: 'May 2025 – August 2025',
       tech: ['Python', 'React', 'Tailwind CSS'],
-      description: `I built a Python scraper with BeautifulSoup and Requests that monitors new NIH RePORTER grants and posts summaries and Excel reports to Slack. The CEO used it weekly to surface around twenty grant opportunities. I also implemented the React and Tailwind UI, survey logic, and visualizations for a heart-health app used by clinical partners.`,
+      description: `Built a Python NIH RePORTER grant scraper that posts Slack summaries and Excel reports—used weekly by the CEO to surface ~20 opportunities. Also shipped React/Tailwind UI, survey logic, and visualizations for a clinical heart-health app.`,
     },
   ],
 }
 
 export const projectsSection = {
-  title: 'Personal Projects:',
+  title: 'Personal Projects',
   projects: [
     {
       title: 'Qflow Co-founder',

@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "@fontsource/press-start-2p/400.css";
 @import "@fontsource/vt323/400.css";
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/600.css";
 
 @theme {
   --color-desert: #f7f7f7;
@@ -9,6 +11,7 @@
   --color-night-ink: #acacac;
   --font-display: "Press Start 2P", ui-monospace, monospace;
   --font-body: "VT323", ui-monospace, monospace;
+  --font-plain: "Source Serif 4", Georgia, "Times New Roman", serif;
   --radius-none: 0px;
 }
 
@@ -57,6 +60,10 @@ body {
   font-family: var(--font-body);
 }
 
+.font-plain {
+  font-family: var(--font-plain);
+}
+
 .pixelated {
   image-rendering: pixelated;
 }
@@ -72,6 +79,7 @@ dialog.section-dialog {
   max-height: none;
   background: transparent;
   color: var(--color-ink);
+  font-family: var(--font-plain);
 }
 
 dialog.section-dialog::backdrop {
@@ -112,6 +120,139 @@ dialog.section-dialog::backdrop {
 .section-meta {
   font-size: 24px;
   line-height: 1.45;
+}
+
+.section-dialog .section-copy {
+  font-family: var(--font-plain);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.section-dialog .section-meta {
+  font-family: var(--font-plain);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 900px) {
+  .section-dialog .section-copy {
+    font-size: 1.25rem;
+  }
+}
+
+.section-dialog .font-display {
+  font-family: var(--font-display);
+}
+
+.plain-page {
+  font-family: var(--font-plain);
+}
+
+.plain-page .section-copy {
+  font-family: var(--font-plain);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.skills-copy .section-copy {
+  max-width: 90ch;
+}
+
+.experience-role {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .experience-role {
+    grid-template-columns: minmax(0, 1fr) 11.5rem;
+    column-gap: 2rem;
+    align-items: start;
+  }
+
+  .experience-when {
+    text-align: right;
+  }
+}
+
+.experience-when {
+  font-family: var(--font-plain);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-ink) 62%, transparent);
+}
+
+.experience-dates {
+  font-weight: 600;
+}
+
+.experience-location {
+  margin-top: 0.15rem;
+}
+
+.experience-details {
+  min-width: 0;
+}
+
+.experience-title {
+  font-family: var(--font-plain);
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-ink);
+}
+
+.experience-company {
+  margin-top: 0.2rem;
+  font-family: var(--font-plain);
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--color-ink);
+}
+
+.experience-tech {
+  margin-top: 0.35rem;
+  font-family: var(--font-plain);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--color-ink) 62%, transparent);
+}
+
+.experience-description {
+  margin-top: 0.65rem;
+  font-family: var(--font-plain);
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-ink);
+  max-width: 80ch;
+}
+
+@media (min-width: 900px) {
+  .experience-title {
+    font-size: 1.25rem;
+  }
+}
+
+.plain-page .section-meta {
+  font-family: var(--font-plain);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@media (min-width: 900px) {
+  .plain-page .section-copy {
+    font-size: 1.25rem;
+  }
+}
+
+.plain-page .font-display {
+  font-family: var(--font-display);
+}
+
+.plain-page footer {
+  font-family: var(--font-plain);
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .world-canvas {
@@ -247,13 +388,6 @@ dialog.section-dialog::backdrop {
   .world-shell .portal-cue {
     bottom: max(4.5rem, env(safe-area-inset-bottom, 0px));
   }
-}
-
-.description-clamp {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
 }
 
 .game-action-btn {

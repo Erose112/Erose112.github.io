@@ -32,8 +32,8 @@ export function applyCanvasScale(canvas, clientWidth, clientHeight, dpr, pixelBo
     pixelBox,
   )
 
-  canvas.style.width = `${clientWidth}px`
-  canvas.style.height = `${clientHeight}px`
+  canvas.style.width = '100%'
+  canvas.style.height = '100%'
   canvas.width = bufferW
   canvas.height = bufferH
 

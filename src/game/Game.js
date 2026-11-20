@@ -212,6 +212,14 @@ export class Game {
     }
   }
 
+  getDinoScreenFeet() {
+    const scale = this.cssPxPerGame
+    return {
+      x: (this.dino.footX - this.camX) * scale,
+      y: (this.dino.footY - this.camY - this.dino.z) * scale,
+    }
+  }
+
   getCameraState() {
     return {
       camX: this.camX,
@@ -283,8 +291,8 @@ export class Game {
    * @param {number} [clientW]
    * @param {number} [clientH]
    */
-  resize(pixelBox = null, clientW, clientH) {
-    if (pixelBox) {
+  resize(pixelBox, clientW, clientH) {
+    if (pixelBox !== undefined) {
       this.pixelBox = pixelBox
     }
     const dpr = window.devicePixelRatio || 1

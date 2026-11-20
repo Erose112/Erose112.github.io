@@ -21,9 +21,15 @@ const SECTION_FOCUS_ID = {
  *   section: 'about' | 'experience' | 'projects' | null,
  *   dialogRef: import('react').RefObject<HTMLDialogElement | null>,
  *   onClose: () => void,
+ *   exitLabel?: string,
  * }} props
  */
-export default function SectionFrame({ section, dialogRef, onClose }) {
+export default function SectionFrame({
+  section,
+  dialogRef,
+  onClose,
+  exitLabel = 'Back to desert',
+}) {
   const Content = section ? SECTION_CONTENT[section] : null
 
   useEffect(() => {
@@ -45,11 +51,12 @@ export default function SectionFrame({ section, dialogRef, onClose }) {
   return (
     <dialog
       ref={dialogRef}
-      className="section-dialog font-body"
+      className="section-dialog"
       onClose={onClose}
     >
       <div className="section-dialog-panel">
         <ExitButton
+          label={exitLabel}
           onPress={() => {
             dialogRef.current?.close()
           }}

@@ -1,4 +1,5 @@
 import { ATLAS } from './atlas.js'
+import { boxesOverlap, footprintBox } from './collision.js'
 import {
   DINO_RUN_PORTAL_DEF,
   GATE_OPENING_CLEAR_PX,
@@ -8,8 +9,9 @@ import {
   PORTAL_DEFS,
   PROP_COUNT_MAX,
   PROP_COUNT_MIN,
-  PROP_MIN_SPACING,
+  PROP_BOX_GAP_PX,
   PROP_PATH_CLEAR_PX,
+  SPAWN_PROP_CLEAR_PX,
   SOUTH_PROP_COUNT_MAX,
   SOUTH_PROP_COUNT_MIN,
   SPAWN,
@@ -38,6 +40,25 @@ import { createRng, randFloat, randInt } from './rng.js'
  * @param {number} px
  * @param {number} py
  */
+/**
+ * @param {PropCactus} prop
+ * @param {number} footX
+ * @param {number} footY
+ * @param {number} footprintW
+ * @param {number} footprintH
+ */
+function propFootprintOverlaps(prop, footX, footY, footprintW, footprintH) {
+  const gap = PROP_BOX_GAP_PX
+  const next = footprintBox(footX, footY, footprintW + gap, footprintH + gap)
+  const existing = footprintBox(
+    prop.footX,
+    prop.footY,
+    prop.footprint.w + gap,
+    prop.footprint.h + gap,
+  )
+  return boxesOverlap(next, existing)
+}
+
 function distPointToSegment(ax, ay, bx, by, px, py) {
   const abx = bx - ax
   const aby = by - ay
@@ -73,11 +94,19 @@ function spawnPropsInBand(rng, yMin, yMax, target, props, openingGates, pathGate
     const footX = randFloat(rng, unitW * size / 2 + 8, WORLD_WIDTH - unitW * size / 2 - 8)
     const footY = randFloat(rng, yMin + 20, yMax - 4)
 
+    const footprintW = unitW * size
+    const footprintH = kind === 'small' ? 6 : 8
+
     let ok = true
-    for (const other of props) {
-      if (Math.hypot(footX - other.footX, footY - other.footY) < PROP_MIN_SPACING) {
-        ok = false
-        break
+    if (Math.hypot(footX - SPAWN.x, footY - SPAWN.y) < SPAWN_PROP_CLEAR_PX) {
+      ok = false
+    }
+    if (ok) {
+      for (const other of props) {
+        if (propFootprintOverlaps(other, footX, footY, footprintW, footprintH)) {
+          ok = false
+          break
+        }
       }
     }
     if (!ok) {
@@ -108,8 +137,6 @@ function spawnPropsInBand(rng, yMin, yMax, target, props, openingGates, pathGate
       continue
     }
 
-    const footprintW = unitW * size
-    const footprintH = kind === 'small' ? 6 : 8
     props.push({ footX, footY, kind, size, footprint: { w: footprintW, h: footprintH } })
   }
 }

@@ -9,9 +9,9 @@ const SHEET_H = 100
 /**
  * Restart crop (36N × 32N device px). Frame 0 only; spin offsets stay unused.
  *
- * @param {{ onPress?: () => void }} props
+ * @param {{ onPress?: () => void, label?: string }} props
  */
-export default function ExitButton({ onPress }) {
+export default function ExitButton({ onPress, label = 'Back to desert' }) {
   const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1
   const N = restartSpriteMultiple(dpr)
   const deviceW = ATLAS.restart.w * N
@@ -28,7 +28,7 @@ export default function ExitButton({ onPress }) {
       aria-keyshortcuts="Escape"
       onClick={() => onPress?.()}
     >
-      <span className="sr-only">Back to desert</span>
+      <span className="sr-only">{label}</span>
       <img
         src={SHEET_URL}
         alt=""
